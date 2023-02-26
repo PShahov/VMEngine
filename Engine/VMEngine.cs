@@ -62,7 +62,7 @@ namespace VMEngine
 
 		private GhostCameraController ghost;
 
-		private VoxelOctree testOct = new VoxelOctree(Vector3.zero, 5, VoxelColor.Random());
+		private VoxelOctree testOct = new VoxelOctree(Vector3.zero, 10, VoxelColor.Random());
 
 		//public TextRenderer DebugTextRenderer;
 
@@ -83,7 +83,7 @@ namespace VMEngine
 			//Closed += Win_Closed;
 
 
-			testOct.Divide();
+			//testOct.Divide();
 		}
 
 
@@ -97,8 +97,9 @@ namespace VMEngine
 			_fpsThread.Start();
 
 
-			ghost = Prefabs.prefab_cameraGhost(new Vector3(-5f, 5.25f, 0f), Quaternion.FromRadians(0, MathV.DegToRad(90), 0)).GetComponent<GhostCameraController>();
-			Prefabs.testCube(new Vector3(0,-1f,0), Quaternion.identity);
+			ghost = Prefabs.prefab_cameraGhost(new Vector3(-10f, 0, 0), Quaternion.FromRadians(0, MathV.DegToRad(90), 0)).GetComponent<GhostCameraController>();
+			Console.WriteLine(Camera.mainCamera.gameObject.transform.rotation.forward);
+			Prefabs.testCube(new Vector3(0,-15f,0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(4, 0, 0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(-4, 0, 0), Quaternion.identity);
 

@@ -232,10 +232,10 @@ Voxel fOpUnionVoxel(Voxel v1, Voxel v2){
 	// return compare(v1.iDist, v2.iDist) ? v1 : v2;
 
 	// return ((v1.iDist) < (v2.iDist)) ? v1 : v2;
-	float f = abs(v1.dist - v2.dist);
-	if(f <= EPSILON){
-		return v2;
-	}
+	// float f = abs(v1.dist - v2.dist);
+	// if(f <= EPSILON){
+	// 	return v2;
+	// }
 	// if(compareCheap(v1.dist, v2.dist)){
 	// 	return v2;
 	// }else{
