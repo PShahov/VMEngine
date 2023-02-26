@@ -1,0 +1,14 @@
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.exe
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.deps.json
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.runtimeconfig.json
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.runtimeconfig.dev.json
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.dll
+C:\Users\PShah\source\repos\VMEngine\VMEngine\bin\Debug\netcoreapp3.1\VMEngine.pdb
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.csproj.AssemblyReference.cache
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.AssemblyInfoInputs.cache
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.AssemblyInfo.cs
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.csproj.CoreCompileInputs.cache
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.dll
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.pdb
+C:\Users\PShah\source\repos\VMEngine\VMEngine\obj\Debug\netcoreapp3.1\VMEngine.genruntimeconfig.cache
