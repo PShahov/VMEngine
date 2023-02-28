@@ -6,8 +6,8 @@ struct Surface
 };
 
 struct Voxel{
-    vec3 pos;
-    float dist;
+    ivec3 pos;
+    int dist;
     float col;
     float dt;
     bool crossed;

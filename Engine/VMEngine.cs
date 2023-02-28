@@ -82,6 +82,8 @@ namespace VMEngine
 			MouseMove += Win_MouseMove;
 			//Closed += Win_Closed;
 
+			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
+			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
 
 			//testOct.Divide();
 		}
@@ -252,20 +254,23 @@ namespace VMEngine
 			}
 			if (KeyboardState.IsKeyPressed(Keys.B))
 			{
-				float[] arr = testOct.ToArray();
 
-				string s = "";
-				int i = 0;
-				foreach(float f in arr)
-				{
-					s += $"{f}f, ";
-					i++;
-					if (i % 5 == 0) s += "\n";
-				}
-				Console.WriteLine(s);
-				Console.WriteLine("\n");
-				Console.WriteLine((arr.Length / 5).ToString());
-			}
+
+				testOct = new VoxelOctree(Vector3.zero, 10, VoxelColor.Random());
+				//float[] arr = testOct.ToArray();
+
+				//string s = "";
+				//int i = 0;
+				//foreach(float f in arr)
+				//{
+				//	s += $"{f}f, ";
+				//	i++;
+				//	if (i % 5 == 0) s += "\n";
+				//}
+				//Console.WriteLine(s);
+				//Console.WriteLine("\n");
+				//Console.WriteLine((arr.Length / 5).ToString());
+	}
 			if (KeyboardState.IsKeyPressed(Keys.N))
 			{
 				float[] arr = testOct.ToArray();
@@ -419,6 +424,7 @@ namespace VMEngine
 
 			Assets.Shaders["raymarch"].Use();
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position"), Camera.mainCamera.gameObject.transform.position.vector3F);
+			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position_int"), Camera.mainCamera.gameObject.transform.position.vector3I);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);

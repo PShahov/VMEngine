@@ -29,6 +29,13 @@ namespace VMEngine
 				return new OpenTK.Mathematics.Vector3(x, y, z);
 			}
 		}
+		public OpenTK.Mathematics.Vector3i vector3I
+		{
+			get
+			{
+				return new OpenTK.Mathematics.Vector3i((int)MathF.Round(x), (int)MathF.Round(y), (int)MathF.Round(z));
+			}
+		}
 
 		public float[] ToArray()
 		{

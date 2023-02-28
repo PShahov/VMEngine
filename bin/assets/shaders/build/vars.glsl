@@ -9,13 +9,14 @@ uniform vec2 u_mouse;
 uniform float u_mouse_wheel;
 
 uniform vec3 u_camera_position;
+uniform ivec3 u_camera_position_int;
 
 uniform vec3 u_camera_forward;
 uniform vec3 u_camera_right;
 uniform vec3 u_camera_up;
 uniform vec3 u_camera_look_at;
 
-uniform float u_objects[13 * 3];
+uniform float u_objects[1000];
 uniform int u_object_size;
 
 uniform bool u_fog = true;
@@ -43,7 +44,7 @@ const int MAX_STEPS_DYNAMIC = 512;
 const int MAX_DIST_DYNAMIC = 200;
 //static obj
 const int MAX_STEPS_STATIC = 50;
-const int MAX_DIST_STATIC = 300;
+const int MAX_DIST_STATIC = 300 * 300;
 
 const float SHADOW_DISTANCE_SQUARE = 200 * 200;
 
@@ -59,6 +60,9 @@ const float sphereBumpFactor = 0.21;
 //tex
 uniform sampler2D u_tex_01;
 uniform sampler2D u_tex_01_bump;
+
+#define NEWTON_ITER 2
+#define HALLEY_ITER 0
 
 
 ///faster

@@ -150,6 +150,22 @@ int imod(int a, int n){
 //     return imod(bitShiftetValue, 2) > 0;
 // }
 
+float cbrt( float x )
+{
+	float y = sign(x) * uintBitsToFloat( floatBitsToUint( abs(x) ) / 3u + 0x2a514067u );
+
+	for( int i = 0; i < NEWTON_ITER; ++i )
+    	y = ( 2. * y + x / ( y * y ) ) * .333333333;
+
+    for( int i = 0; i < HALLEY_ITER; ++i )
+    {
+    	float y3 = y * y * y;
+        y *= ( y3 + 2. * x ) / ( 2. * y3 + x );
+    }
+    
+    return y;
+}
+
 bool compare(float a, float b){
 	// return false;
 	// for(int i = 0;i < 32;i++){

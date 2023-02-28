@@ -110,6 +110,10 @@ mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
     return mat3( cu, cv, -cw );
 }
 
+mat3 getCam(vec3 camF, vec3 camR, vec3 camU){
+    return mat3(camR, camU, camF);
+}
+
 float maxcomp( in vec4 v )
 {
     return max( max(v.x,v.y), max(v.z,v.w) );
@@ -261,14 +265,15 @@ void main()
     vec2 mo = u_mouse.xy / u_resolution.xy;
     // if( u_mouse.z<=0.00001 ) mo=vec2(0.0);
 	
-	float time = 2.0*u_time + 50.0*mo.x;
+	float time = 2.0*u_time + 50.0;
     // camera
 	float cr = 0.2*cos(0.1*u_time);
-	vec3 ro = path( time+0.0, 1.0 );
+	// vec3 ro = path( time+0.0, 1.0 );
+    vec3 ro = u_camera_position;
 	vec3 ta = path( time+5.0, 1.0 ) - vec3(0.0,6.0,0.0);
 	gro = ro;
 
-    mat3 cam = setCamera( ro, ta, cr );
+    mat3 cam = getCam(u_camera_forward, u_camera_right, u_camera_up);
 	
 	// build ray
     float r2 = p.x*p.x*0.32 + p.y*p.y;

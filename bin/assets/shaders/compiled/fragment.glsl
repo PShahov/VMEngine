@@ -12,13 +12,14 @@ uniform vec2 u_mouse;
 uniform float u_mouse_wheel;
 
 uniform vec3 u_camera_position;
+uniform ivec3 u_camera_position_int;
 
 uniform vec3 u_camera_forward;
 uniform vec3 u_camera_right;
 uniform vec3 u_camera_up;
 uniform vec3 u_camera_look_at;
 
-uniform float u_objects[13 * 3];
+uniform float u_objects[1000];
 uniform int u_object_size;
 
 uniform bool u_fog = true;
@@ -46,7 +47,7 @@ const int MAX_STEPS_DYNAMIC = 512;
 const int MAX_DIST_DYNAMIC = 200;
 //static obj
 const int MAX_STEPS_STATIC = 50;
-const int MAX_DIST_STATIC = 300;
+const int MAX_DIST_STATIC = 300 * 300;
 
 const float SHADOW_DISTANCE_SQUARE = 200 * 200;
 
@@ -62,6 +63,9 @@ const float sphereBumpFactor = 0.21;
 //tex
 uniform sampler2D u_tex_01;
 uniform sampler2D u_tex_01_bump;
+
+#define NEWTON_ITER 2
+#define HALLEY_ITER 0
 
 
 ///faster
@@ -919,8 +923,8 @@ struct Surface
 };
 
 struct Voxel{
-    vec3 pos;
-    float dist;
+    ivec3 pos;
+    int dist;
     float col;
     float dt;
     bool crossed;
@@ -1087,6 +1091,22 @@ int imod(int a, int n){
 //     int bitShiftetValue = value / bitShifts;
 //     return imod(bitShiftetValue, 2) > 0;
 // }
+
+float cbrt( float x )
+{
+	float y = sign(x) * uintBitsToFloat( floatBitsToUint( abs(x) ) / 3u + 0x2a514067u );
+
+	for( int i = 0; i < NEWTON_ITER; ++i )
+    	y = ( 2. * y + x / ( y * y ) ) * .333333333;
+
+    for( int i = 0; i < HALLEY_ITER; ++i )
+    {
+    	float y3 = y * y * y;
+        y *= ( y3 + 2. * x ) / ( 2. * y3 + x );
+    }
+    
+    return y;
+}
 
 bool compare(float a, float b){
 	// return false;
@@ -1499,52 +1519,98 @@ bool intersectAABB(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
     // vec.x > vec.y
 }
 
+bool BBoxIntersect(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
+    vec3 tbot = rayDir * (boxMin - rayOrigin);
+    vec3 ttop = rayDir * (boxMax - rayOrigin);
+    vec3 tmin = min(ttop, tbot);
+    vec3 tmax = max(ttop, tbot);
+    vec2 t = max(tmin.xx, tmin.yz);
+    float t0 = max(t.x, t.y);
+    t = min(tmax.xx, tmax.yz);
+    float t1 = min(t.x, t.y);
+    return t1 > max(t0, 0.0);
+}
 
-float boxDist(vec3 pos){
+bool compareInt(int a, int b){
+    return bitInt(a - b, 31);
+}
+
+
+int boxDist(ivec3 pos){
     // return int(max(max(pos.x, pos.y), pos.z));
-    return int(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+    return abs(pos.x) + abs(pos.y) + abs(pos.z);
+    // return int(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
     // return int(lengthSqr(pos));
 }
 
 Voxel rayMarchStatic(vec3 ro, vec3 rd){
-	Voxel res = Voxel(vec3(0), MAX_DIST_STATIC + 1, 0, -1, false);
+	Voxel res = Voxel(ivec3(0), MAX_DIST_STATIC + 1, 0, -1, false);
+
+    // int fori = 5 * u_object_size;
+    // for(int i = 0;i < fori;i+= 5){
+    //             vec3 voxPos = vec3(u_objects[i + 0], u_objects[i + 1], u_objects[i + 2]) * 2;
+    //             // vec3 voxPos = vec3(i,0,0);
+
+    //             vec3 b = vec3(1) * u_objects[i + 3];
+    //             // vec3 b = vec3(0.1);
+    //             // vec3 b = vec3(1) * 10;
+
+    //             float dt = dot(rd, normalize(-ro + voxPos));
+    //             // if(dt < 0.0){
+    //             //     continue;
+    //             // }
+
+    //             bool voxCross = intersectAABB(ro, rd, voxPos - b, voxPos + b);
+
+    //             if(!voxCross) continue;
+
+    //             voxPos = voxPos;
+    //             float voxDist = boxDist(voxPos - ro);
+    //             float voxCol = 1;
+    //             voxCol = 1;
+    //             Voxel obj = Voxel(voxPos, voxDist, voxCol, dt, voxCross);
+
+    //             res = obj.dist < res.dist ? obj : res;
+    // }
+
+    // return res;
 
     int edge = 10;
-
+    // edge = int(cbrt(8));
     for(int x = 0;x < edge; x++){
         for(int y = 0;y < edge; y++){
             for(int z = 0;z < edge; z++){
-                vec3 voxPos = vec3(x,y,z) * 0.4;
-                // voxPos *= 5;
-                // vec3 voxPos = vec3(i * 3, 0,0);
+                ivec3 voxPos = ivec3(x,y,z) * 2;
+                vec3 voxPosF = vec3(x,y,z) * 2;
 
-                if(x > 0 && x < edge - 1 && y > 0 && y < edge - 1 && z > 0 && z < edge - 1)
-                    continue;
+                vec3 b = vec3(1) * 0.5;
 
+                // if(x > 0 && x < edge - 1 && y > 0 && y < edge - 1 && z > 0 && z < edge - 1) continue;
 
-                vec3 b = vec3(1) * 0.1;
-
-                float dt = dot(rd, normalize(-ro + voxPos));
-                // if(dt < 0.0){
-                //     i += 5;
-                //     f+= 3;
+                // float dt = dot(rd, normalize(-ro + voxPos));
+                // int dt = int(bitInt(floatBitsToInt(dot(rd, normalize(-ro + voxPos))), 31));
+                // if(dt == 1){
                 //     continue;
                 // }
 
-                bool voxCross = intersectAABB(ro, rd, voxPos - b, voxPos + b);
-                // bool voxCross = dt > 0.99999;
+                bool voxCross = intersectAABB(ro, rd, voxPosF - b, voxPosF + b);
+                // bool voxCross = BBoxIntersect(ro, rd, voxPosF - b, voxPosF + b);
 
-                voxPos = voxPos + ro;
+                if(!voxCross) continue;
 
-                // float voxDist = fBoxCheap(voxPos, b);
-                float voxDist = boxDist(voxPos);
+                voxPos = voxPos;
+                int voxDist = boxDist(voxPos - u_camera_position_int);
                 float voxCol = 1;
                 voxCol = 1;
-                Voxel obj = Voxel(voxPos, voxDist, voxCol, dt, voxCross);
+                Voxel obj = Voxel(voxPos, voxDist, voxCol, 0.0, voxCross);
+                
 
-                if(voxCross)
-                    res = obj.dist < res.dist ? obj : res;
+                res = compareInt(obj.dist, res.dist) ? obj : res;
 
+                //work but slow
+                // res = obj.dist < res.dist ? obj : res;
+
+                //work but toy
                 // res = obj.dt > res.dt ? obj : res;
             }
         }
@@ -1555,34 +1621,8 @@ Voxel rayMarchStatic(vec3 ro, vec3 rd){
 
 
 
-// float getSoftShadow(vec3 p, vec3 lightPos, float lightSize = 0.5) {
-//     float res = 1.0;
-//     float dist = 0.05;
-//     // float lightSize = 0.5;
-//     for (int i = 0; i < MAX_STEPS_DYNAMIC; i++) {
-//         float hit = mapDynamic(p + lightPos * dist).x;
-//         res = min(res, hit / (dist * lightSize));
-//         dist += hit;
-//         if (hit < 0.0001 || dist > 100.0) break;
-//     }
-//     return clamp(res, 0.0, 1.0);
-// }
-
-// float getEdgyShadow(vec3 p, vec3 lightPos, vec3 N){
-// 	    float d = rayMarch(p + N * 0.02, normalize(lightPos)).x;
-//     	return d;
-// }
-
-// vec3 getNormal(vec3 p){
-//     vec2 e = vec2(EPSILON, 0.0);
-//     vec3 n = vec3(map(p).x) - vec3(map(p - e.xyy).x, map(p - e.yxy).x, map(p - e.yyx).x);
-//     return normalize(n);
-// }
 
 mat3 getCam(vec3 camF, vec3 camR, vec3 camU){
-    // vec3 camF = normalize(vec3(lookAt - ro));
-    // vec3 camR = normalize(cross(vec3(0, 1, 0), camF));
-    // vec3 camU = cross(camF, camR);
     return mat3(camR, camU, camF);
 }
 
@@ -1603,7 +1643,7 @@ vec4 render(in vec2 uv){
     // if(vox.dt >= 0.9){
     if(vox.crossed){
     // if(vox.dist < MAX_DIST_STATIC){
-        col = vec4(vox.dist / 10, 0, 0,1);
+        col = vec4(vec3(noise3(vox.pos)),1);
     }else{
         col = background;
     }
@@ -1622,9 +1662,10 @@ vec4 renderAAx4(){
 
 void main()
 {
-    vec2 resol = vec2(900, 600);
-    resol = u_resolution;
-    vec2 uv = (2.0 * gl_FragCoord.xy - resol.xy) / resol.y;
+    float ratio = u_resolution.x / u_resolution.y;
+    vec2 resol = vec2(u_resolution.x / 4, u_resolution.x / 4 / ratio);
+    // resol = u_resolution;
+    vec2 uv = (0.5 * gl_FragCoord.xy - resol.xy) / resol.y;
 
 
     vec4 color = vec4(vec3(0), 1);
