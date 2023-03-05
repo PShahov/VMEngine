@@ -6,9 +6,9 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VMEngine.Engine
+namespace VMEngine.Voxel
 {
-	struct VoxelColor
+	public struct VoxelColor
 	{
 		public byte[] Color;
 
@@ -44,13 +44,19 @@ namespace VMEngine.Engine
 
 		public float ToFloat()
 		{
-			return System.BitConverter.ToSingle(Color);
+			//a
+			//b
+			//g
+			//r
+			//return System.BitConverter.ToSingle(new byte[] { 0x00, 0x00, 0x00, 0xff });
+			return System.BitConverter.ToSingle(new byte[] { Color[3], Color[2], Color[1], Color[0] });
 		}
 		public static VoxelColor Random()
 		{
 			Random r = new Random();
-			uint hex = (uint)r.NextInt64(uint.MaxValue);
-			VoxelColor v = new VoxelColor(hex);
+			//uint hex = (uint)r.NextInt64(uint.MaxValue);
+			VoxelColor v = new VoxelColor((byte)r.Next(256), (byte)r.Next(256), (byte)r.Next(256));
+			//v = new VoxelColor(0, 255, 0, 255);
 			return v;
 		}
 		public override string ToString()
@@ -59,7 +65,7 @@ namespace VMEngine.Engine
 		}
 	}
 
-	class VoxelOctree
+	public class VoxelOctree
 	{
 		public const uint DEFAULT_VOXEL_COLOR = 0x777777FF;
 		public const byte MAX_SUB_LAYER = 5;
@@ -114,6 +120,16 @@ namespace VMEngine.Engine
 				SubVoxels[i].ParentVoxel= this;
 			}
 		}
+
+		//public VoxelOctree DivideAt(Vector3 pos, int div = 2)
+		//{
+			
+		//}
+
+		//public bool Intersect(Vector3 pos)
+		//{
+
+		//}
 
 		public float[] ToArray()
 		{

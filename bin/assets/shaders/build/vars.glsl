@@ -44,7 +44,7 @@ const int MAX_STEPS_DYNAMIC = 512;
 const int MAX_DIST_DYNAMIC = 200;
 //static obj
 const int MAX_STEPS_STATIC = 50;
-const int MAX_DIST_STATIC = 300 * 300;
+const int MAX_DIST_STATIC = 100 * 100;
 
 const float SHADOW_DISTANCE_SQUARE = 200 * 200;
 
@@ -69,3 +69,17 @@ uniform sampler2D u_tex_01_bump;
 // float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), 64.0 - 63.0*v );
 //better
 // float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), 1.0 + 63.0*pow(1.0-v,4.0) );
+
+vec3 globalLightDirection = vec3(-1,-1,-1);
+
+
+int CHUNK_SIZE = 16;
+int CHUNK_HALF_SIZE = 16;
+
+//0 - full colored;
+//1 - normals;
+//2 - distance;
+const int colorMode = 0;
+
+const bool useAmbientOcclusion = false;
+const bool useShadows = false;

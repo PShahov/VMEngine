@@ -18,6 +18,7 @@ using VMEngine.RMMath.RM;
 using VMEngine.GameComponents;
 using VMEngine.Engine;
 //using VMEngine.UI;
+using VMEngine.Voxel;
 
 namespace VMEngine
 {
@@ -62,7 +63,7 @@ namespace VMEngine
 
 		private GhostCameraController ghost;
 
-		private VoxelOctree testOct = new VoxelOctree(Vector3.zero, 10, VoxelColor.Random());
+		public VoxelOctree testOct = new VoxelOctree(Vector3.zero, 16, VoxelColor.Random());
 
 		//public TextRenderer DebugTextRenderer;
 
@@ -85,7 +86,6 @@ namespace VMEngine
 			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
 			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
 
-			//testOct.Divide();
 		}
 
 
@@ -250,13 +250,19 @@ namespace VMEngine
 			}
 			if (KeyboardState.IsKeyPressed(Keys.V))
 			{
-				testOct.Divide();
+				//testOct.Divide();
+				VoxelOctree vox = testOct;
+				while (vox.SubVoxels[0] != null)
+				{
+					vox = vox.SubVoxels[0];
+				}
+				vox.Divide();
 			}
 			if (KeyboardState.IsKeyPressed(Keys.B))
 			{
 
 
-				testOct = new VoxelOctree(Vector3.zero, 10, VoxelColor.Random());
+				testOct = new VoxelOctree(Vector3.zero, 16, VoxelColor.Random());
 				//float[] arr = testOct.ToArray();
 
 				//string s = "";
@@ -270,7 +276,7 @@ namespace VMEngine
 				//Console.WriteLine(s);
 				//Console.WriteLine("\n");
 				//Console.WriteLine((arr.Length / 5).ToString());
-	}
+			}
 			if (KeyboardState.IsKeyPressed(Keys.N))
 			{
 				float[] arr = testOct.ToArray();
@@ -278,6 +284,13 @@ namespace VMEngine
 				//test cube
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+			}
+			if (KeyboardState.IsKeyPressed(Keys.M))
+			{
+				testOct.Color = VoxelColor.Random();
+				Console.WriteLine(testOct.Color.ToString());
+				Console.WriteLine(testOct.Color.ToFloat().ToString());
+				Program.FloatToBinary(testOct.Color.ToFloat());
 			}
 
 
@@ -312,6 +325,14 @@ namespace VMEngine
 				//test cube
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+
+				VoxelOctree vox = testOct;
+				while (vox.SubVoxels[0] != null)
+				{
+					vox = vox.SubVoxels[0];
+				}
+				//Title = $"{vox.Position.ToString()}  ---  {vox.EdgeSize}";
+				//Title = $"{Camera.mainCamera.gameObject.transform.position}";
 
 				//int arrayPtr = Assets.Shaders["raymarch"].GetParam("u_objects");
 				//float[] arr = list.ToArray();
@@ -529,6 +550,7 @@ namespace VMEngine
 				GL.GetUniform(Assets.Shaders["raymarch"].Handle, Assets.Shaders["raymarch"].GetParam("u_opacity"), out u_opacity);
 				//GL.Uniform2(Assets.Shaders["raymarch"].GetParam("u_resolution"), new Vector2(Size.X, Size.Y));
 				//Title = u_opacity.ToString();
+				//Title = Camera.mainCamera.gameObject.transform.position.ToString();
 
 				Thread.Sleep(250);
 
