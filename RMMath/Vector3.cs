@@ -70,10 +70,22 @@ namespace VMEngine
 			float mag = Magnitude(this);
 			this = this / mag;
 		}
+
+		public void ExcludeInfinity()
+		{
+			if (float.IsInfinity(this.x)) this.x = 0;
+			if (float.IsInfinity(this.y)) this.y = 0;
+			if (float.IsInfinity(this.z)) this.z = 0;
+		}
+
 		public static Vector3 Normalize(Vector3 v)
 		{
 			float mag = Magnitude(v);
 			return v / mag;
+		}
+		public static float Dot(Vector3 v1, Vector3 v2)
+		{
+			return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 		}
 		public Vector3 normalized { get { return Vector3.Normalize(this); } }
 		public static float Magnitude(Vector3 vector) { return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z); }
@@ -95,6 +107,8 @@ namespace VMEngine
 
 		public static Vector3 operator +(Vector3 a, Vector3 b) { return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z); }
 		public static Vector3 operator -(Vector3 a, Vector3 b) { return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z); }
+		public static Vector3 operator *(Vector3 a, Vector3 b) { return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z); }
+		public static Vector3 operator /(Vector3 a, Vector3 b) { return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z); }
 		public static Vector3 operator -(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
 		public static Vector3 operator *(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
 		public static Vector3 operator *(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
@@ -102,5 +116,31 @@ namespace VMEngine
 
 		public static Vector3 operator +(Vector3 a, Vector2 b) { return new Vector3(a.x + b.X, a.y + b.Y, a.z); }
 		public static Vector3 operator -(Vector3 a, Vector2 b) { return new Vector3(a.x - b.X, a.y - b.Y, a.z); }
+
+		public float GetComponent(int index)
+		{
+			switch (index)
+			{
+				case 0: return this.x;
+				case 1: return this.y;
+				case 2: return this.z;
+			}
+			return this.x;
+		}
+
+		public static Vector3 Min(Vector3 a, Vector3 b)
+		{
+			if (Dot(a, a) < Dot(b, b))
+				return a;
+			else
+				return b;
+		}
+		public static Vector3 Max(Vector3 a, Vector3 b)
+		{
+			if (Dot(a,a) < Dot(b,b))
+				return b;
+			else
+				return a;
+		}
 	}
 }

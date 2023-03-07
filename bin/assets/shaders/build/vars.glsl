@@ -6,7 +6,7 @@ uniform float opacity = 1;
 uniform float u_time = 0;
 uniform vec2 u_mouse;
 
-uniform float u_mouse_wheel;
+uniform float u_mouse_wheel = 1;
 
 uniform vec3 u_camera_position;
 uniform ivec3 u_camera_position_int;
@@ -70,11 +70,13 @@ uniform sampler2D u_tex_01_bump;
 //better
 // float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), 1.0 + 63.0*pow(1.0-v,4.0) );
 
-vec3 globalLightDirection = vec3(-1,-1,-1);
+vec3 globalLightDirection = vec3(1,-1,0.5);
+// vec4 globalLightColor = vec4(1.0, 0.81, 0.28, 1);
+vec4 globalLightColor = vec4(1,1,1, 1);
 
 
-int CHUNK_SIZE = 16;
-int CHUNK_HALF_SIZE = 16;
+const float CHUNK_SIZE = 12.8;
+const float CHUNK_HALF_SIZE = 6.4;
 
 //0 - full colored;
 //1 - normals;
@@ -82,4 +84,10 @@ int CHUNK_HALF_SIZE = 16;
 const int colorMode = 0;
 
 const bool useAmbientOcclusion = false;
-const bool useShadows = false;
+const bool useGlobalShadows = true;
+const bool useEdgeAmbient = false;
+const bool useEdging = true;
+
+const bool useSunGlare = true;
+
+const bool voxelColorNoise = true;

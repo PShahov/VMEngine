@@ -65,34 +65,71 @@ namespace VMEngine.Voxel
 		}
 	}
 
+	public enum VoxelStateIndex
+	{
+		FillState = 0,
+		Fullfilled = 1,
+		Surrounded = 2
+	}
+
+	public enum VoxelDiagonalDirections
+	{
+		LTF = 0,
+		RTF = 1,
+		RTN = 2,
+		LTN = 3,
+		LBF = 4,
+		RBF = 5,
+		RBN = 6,
+		LBN = 7
+	}
+
 	public class VoxelOctree
 	{
 		public const uint DEFAULT_VOXEL_COLOR = 0x777777FF;
-		public const byte MAX_SUB_LAYER = 5;
-		public const float DEFAULT_EDGE_SIZE = 10;
+		public const byte MAX_SUB_LAYER = 8;
+		public const float DEFAULT_EDGE_SIZE = 12.8f;
 
 		public static Vector3[] DIAGONAL_DIRECTIONS = new Vector3[]
 		{
-			new Vector3(-1,1,-1),
-			new Vector3(1,1,-1),
-			new Vector3(1,1,1),
-			new Vector3(-1,1,1),
+			new Vector3(-1,1,-1), //left top far
+			new Vector3(1,1,-1), //right top far
+			new Vector3(1,1,1), //right top near
+			new Vector3(-1,1,1), //left top near
 
-			new Vector3(-1,-1,-1),
-			new Vector3(1,-1,-1),
-			new Vector3(1,-1,1),
-			new Vector3(-1,-1,1),
+			new Vector3(-1,-1,-1), //left bottom far
+			new Vector3(1,-1,-1), // right bottom far
+			new Vector3(1,-1,1), //right bottom near
+			new Vector3(-1,-1,1), //left bottom near
+		};
+
+		public static Vector3[] AXIS_DIRECTIONS = new Vector3[]
+		{
+			new Vector3(-1,0,0),//left
+			new Vector3(1,0,0),//right
+
+			new Vector3(0,1,0), //top
+			new Vector3(0,-1,0), //bottom
+
+			new Vector3(0,0,1), //near
+			new Vector3(0,0,-1), //far
 		};
 
 		public byte Index = 1;
 		public VoxelOctree[] SubVoxels = new VoxelOctree[8];
 		public VoxelOctree ParentVoxel = null;
-		public byte State = 0b0001;
+		public byte State = 0b00000001;
 		public VoxelColor Color = new VoxelColor(DEFAULT_VOXEL_COLOR);
 		public Vector3 Position = new Vector3();
 		public float EdgeSize = DEFAULT_EDGE_SIZE;
 
-		public VoxelOctree(Vector3 position, float edgeSize, VoxelColor color, byte index = 1, byte state = 0b0001)
+		public uint VoxelMaterial = 0;
+		public uint CollisionMask = 1;
+		public uint VoxelBlockId = 1;
+
+		public bool CanDivide { get { return Index < MAX_SUB_LAYER; } }
+
+		public VoxelOctree(Vector3 position, float edgeSize, VoxelColor color, byte index = 1, byte state = 0b00000001)
 		{
 			Position = position;
 			EdgeSize = edgeSize;
@@ -102,6 +139,10 @@ namespace VMEngine.Voxel
 		}
 		public void Divide()
 		{
+			if(Index >= MAX_SUB_LAYER)
+			{
+				return;
+			}
 			if (SubVoxels[0] !=  null)
 			{
 				foreach(VoxelOctree vo in SubVoxels)
@@ -116,20 +157,104 @@ namespace VMEngine.Voxel
 
 			for(int i = 0;i < 8; i++)
 			{
-				SubVoxels[i] = new VoxelOctree(Position + (DIAGONAL_DIRECTIONS[i] * offset), edge, VoxelColor.Random(), index);
+				SubVoxels[i] = new VoxelOctree(Position + (DIAGONAL_DIRECTIONS[i] * offset), edge, this.Color, index);
 				SubVoxels[i].ParentVoxel= this;
+				SubVoxels[i].CollisionMask = this.CollisionMask;
+				SubVoxels[i].VoxelMaterial = this.VoxelMaterial;
+				SubVoxels[i].VoxelBlockId = this.VoxelBlockId;
 			}
 		}
 
+
 		//public VoxelOctree DivideAt(Vector3 pos, int div = 2)
 		//{
-			
-		//}
-
-		//public bool Intersect(Vector3 pos)
-		//{
 
 		//}
+
+		public bool IsPointInside(Vector3 pos)
+		{
+			Vector3 min = this.Position - (Vector3.one * 0.5f * this.EdgeSize);
+			Vector3 max = this.Position + (Vector3.one * 0.5f * this.EdgeSize);
+
+			//Check if the point is less than max and greater than min
+			if (pos.x > min.x && pos.x < max.x &&
+			pos.y > min.y && pos.y < max.y &&
+			pos.z > min.z && pos.z < max.z)
+			{
+				return true;
+			}
+
+			//If not, then return false
+			return false;
+		}
+
+
+
+		public void CalcFullfilledState()
+		{
+			//if()
+		}
+
+		public void CalcSurround()
+		{
+			if(Index <= 2)
+			{
+				SetState(VoxelStateIndex.Surrounded, false);
+			}
+
+			if (SubVoxels[0] != null)
+			{
+				for(int i = 0;i < 8; i++)
+				{
+					SubVoxels[i].CalcSurround();
+				}
+				return;
+			}
+
+			bool surrounded = true;
+			for(int i = 0;i < AXIS_DIRECTIONS.Length; i++)
+			{
+				for(int j = 0;j < 8; j++)
+				{
+					if (this.ParentVoxel.SubVoxels[j].GetState(VoxelStateIndex.Fullfilled) == false) { surrounded = false; break; }
+					if (this.ParentVoxel.SubVoxels[j].IsPointInside(this.Position + (AXIS_DIRECTIONS[i] * (this.EdgeSize / 2 + 0.05f))) == false) { surrounded = false; break; }
+
+				}
+				if (!surrounded) break;
+			}
+
+			this.SetState(VoxelStateIndex.Surrounded, surrounded);
+
+		}
+
+		public VoxelOctree[] GetAllSubvoxels()
+		{
+
+			if (!GetState(0))
+				return new VoxelOctree[0];
+
+			List<VoxelOctree> list = new List<VoxelOctree>();
+
+			digDown(this);
+
+
+			void digDown(VoxelOctree oct)
+			{
+				if (oct.SubVoxels[0] != null)
+				{
+					foreach (VoxelOctree sv in oct.SubVoxels)
+					{
+						digDown(sv);
+					}
+				}
+				else
+				{
+					list.Add(oct);
+				}
+			}
+
+			return list.ToArray();
+		}
 
 		public float[] ToArray()
 		{
@@ -153,16 +278,27 @@ namespace VMEngine.Voxel
 				}
 				else
 				{
-					list.AddRange(new float[]{// 5 * 4 bytes
-						oct.Position.x, oct.Position.y, oct.Position.z,
-						oct.EdgeSize,
-						oct.Color.ToFloat(),
-					});
+					if(oct.GetState(VoxelStateIndex.FillState) && !oct.GetState(VoxelStateIndex.Surrounded))
+						list.AddRange(new float[]{// 5 * 4 bytes
+							oct.Position.x, oct.Position.y, oct.Position.z,
+							oct.EdgeSize,
+							oct.Color.ToFloat(),
+						});
 				}
 			}
 
 			return list.ToArray();
 		}
+
+		public void SetState(VoxelStateIndex pos, bool value)
+		{
+			SetState((int)pos, value);
+		}
+		public bool GetState(VoxelStateIndex pos)
+		{
+			return GetState((int)pos);
+		}
+
 		public void SetState(int pos, bool value)
 		{
 			if (value)

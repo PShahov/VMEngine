@@ -9,7 +9,7 @@ uniform float opacity = 1;
 uniform float u_time = 0;
 uniform vec2 u_mouse;
 
-uniform float u_mouse_wheel;
+uniform float u_mouse_wheel = 1;
 
 uniform vec3 u_camera_position;
 uniform ivec3 u_camera_position_int;
@@ -73,19 +73,27 @@ uniform sampler2D u_tex_01_bump;
 //better
 // float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), 1.0 + 63.0*pow(1.0-v,4.0) );
 
-vec3 globalLightDirection = vec3(-1,-1,-1);
+vec3 globalLightDirection = vec3(1,-1,0.5);
+// vec4 globalLightColor = vec4(1.0, 0.81, 0.28, 1);
+vec4 globalLightColor = vec4(1,1,1, 1);
 
 
-int CHUNK_SIZE = 16;
-int CHUNK_HALF_SIZE = 16;
+const float CHUNK_SIZE = 12.8;
+const float CHUNK_HALF_SIZE = 6.4;
 
 //0 - full colored;
 //1 - normals;
 //2 - distance;
-const int colorMode = 2;
+const int colorMode = 0;
 
 const bool useAmbientOcclusion = false;
-const bool useShadows = false;
+const bool useGlobalShadows = true;
+const bool useEdgeAmbient = false;
+const bool useEdging = true;
+
+const bool useSunGlare = true;
+
+const bool voxelColorNoise = true;
 
 ////////////////////////////////////////////////////////////////
 //
@@ -1577,12 +1585,8 @@ Voxel CalcVoxel(vec3 ro, vec3 rd, vec3 pos, vec3 b, float col, Voxel res){
 
     voxPos = voxPos;
     
-    // float voxDist = boxDist(voxPos - u_camera_position, b);
     float voxDist = intersectAABBdist(ro, rd, voxPosF - b, voxPosF + b);
-    // pointDist = intersectAABBdist(ro, rd, vec3(2,0,0) + vec3(-1), vec3(2,0,0) + vec3(1));
-    // float voxDist = fBoxCheap(voxPos - u_camera_position, b);
     float voxCol = col;
-    // voxCol = 1;
     Voxel obj = Voxel(voxPos, voxDist, voxCol, dt, voxCross, b.x);
 
     if(obj.dist < res.dist) return obj;
@@ -1597,18 +1601,19 @@ Voxel rayMarchStatic(vec3 ro, vec3 rd){
     
     float dt = dot(rd, normalize(vec3(0) - u_camera_position));
 
-    if(dt < 0){
-        return res;
-    }
     
     int d = 0;
 
     vec3 camForward = rd;
 
-    bool b = intersectAABB(ro, rd, vec3(-CHUNK_HALF_SIZE - 5), vec3(CHUNK_HALF_SIZE + 5));
+    vec3 chunkCenter = vec3(u_objects[0],u_objects[1],u_objects[2]);
+
+    bool b = intersectAABB(ro, rd, chunkCenter - vec3(CHUNK_HALF_SIZE), chunkCenter + vec3(CHUNK_HALF_SIZE));
     if(!b) return res;
 
-    for(int i = 0;i < u_object_size * 5;i+= 5){
+    int voxelsInChunk = int(u_objects[3]);
+
+    for(int i = 4;i < voxelsInChunk * 5;i+= 5){
         vec3 pos = vec3(
             (u_objects[i + 0]),
             (u_objects[i + 1]),
@@ -1616,6 +1621,38 @@ Voxel rayMarchStatic(vec3 ro, vec3 rd){
         );
         vec3 b = vec3(u_objects[i + 3]) * 0.5;
         res = CalcVoxel(ro, rd, pos, b, u_objects[i + 4], res);
+    }
+
+    return res;
+}
+
+Voxel rayMarchStaticLight(vec3 ro, vec3 rd, float dist){
+	Voxel res = Voxel(vec3(0), MAX_DIST_STATIC, 0, 1, false, 0);
+
+    
+    float dt = dot(rd, normalize(vec3(0) - u_camera_position));
+
+    
+    int d = 0;
+
+    vec3 camForward = rd;
+
+    vec3 chunkCenter = vec3(u_objects[0],u_objects[1],u_objects[2]);
+
+    bool b = intersectAABB(ro, rd, chunkCenter - vec3(CHUNK_HALF_SIZE), chunkCenter + vec3(CHUNK_HALF_SIZE));
+    if(!b) return res;
+
+    int voxelsInChunk = int(u_objects[3]);
+
+    for(int i = 4;i < voxelsInChunk * 5;i+= 5){
+        vec3 pos = vec3(
+            (u_objects[i + 0]),
+            (u_objects[i + 1]),
+            (u_objects[i + 2])
+        );
+        vec3 b = vec3(u_objects[i + 3]) * 0.5;
+        res = CalcVoxel(ro, rd, pos, b, u_objects[i + 4], res);
+        if(res.dist < dist) return res;
     }
 
     return res;
@@ -1655,6 +1692,13 @@ vec3 BoxNormal(vec3 center, vec3 size, vec3 point)
 	return normalize(normal);
 }
 
+vec4 ColorBlend(vec4 a, vec4 b, float at, float bt){
+    float tSumm = at + bt;
+    at = 1 / tSumm * at;
+    bt = 1 / tSumm * bt;
+    return (a * at) + (b * bt);
+}
+
 
 vec3 boxNormal(vec3 dir){
     // return dir;
@@ -1687,7 +1731,7 @@ vec4 render(in vec2 uv){
 
     vec4 background = vec4(0.5, 0.8, 0.9, 1);
     
-    if(vox.crossed){
+    if(vox.crossed && vox.dist > 0){
         float cc = intBitsToFloat(0xFF0000FF);
         uint cf = floatBitsToUint(vox.col);
         vec4 cv = vec4(
@@ -1706,24 +1750,18 @@ vec4 render(in vec2 uv){
             cv.z / 25.6,
             1
         );
-
-
-
-        // N = abs(boxNormal(normalize(vec3(0.8,0.9,0.9))));
-
-        // pointDist = fBoxCheap(vec3(2,0,0) - ro, vec3(2));
         vec3 b = vec3(vox.edge);
         float pointDist = intersectAABBdist(ro, rd, vox.pos - b, vox.pos + b);
         vec3 point = ro + (pointDist * rd);
+        vec3 hitPoint = point;
         point = point - vox.pos;
+        vec3 nPoint = point / vox.edge;
         point = normalize(point);
-        vec3 N = abs(boxNormal(point));
-        // col += vec4(N,1);
-        // col /= 2;
+        vec3 N = (boxNormal(point));
 
         switch(colorMode){
             case 1:{
-                col = vec4(N, 1);
+                col = vec4(abs(N), 1);
                 break;
             }
             case 2:{
@@ -1734,9 +1772,83 @@ vec4 render(in vec2 uv){
             }
         }
 
+        // if(voxelColorNoise){
+        //     vec3 n = noise3()
+        // }
+
+
+        float lightDot = (dot(N, globalLightDirection) * -1 + 1) / 4;
+        if(useGlobalShadows && lightDot > 0.0){
+            //if need global light calculation (red)
+
+            vec3 so = hitPoint;
+            vec3 sd = globalLightDirection;
+            so += sd * (MAX_DIST_STATIC * -0.5);
+            // sd = 
+            
+            Voxel srv = rayMarchStaticLight(so, sd, MAX_DIST_STATIC * 0.5);
+            
+            
+            vec3 sunHitPoint = so + (sd * srv.dist);
+
+            // float dist = lengthSqr(abs(nPoint - srvPoint));
+            float dist = lengthSqr(hitPoint - sunHitPoint);
+            if(dist < EPSILON){
+                col = ColorBlend(col, globalLightColor, 1, lightDot / 1);
+                // col = vec4(1,0,0,1);
+            }else{
+                col = ColorBlend(col, globalLightColor, 1, 0);
+                // col = vec4(0,1,0,1);
+            }
+
+        }else{
+            //if no need to calc GL (blue)
+            // col = vec4(0,0,1,1);
+
+            //
+            //sunray-normal dot-light
+            //
+            col = ColorBlend(col, globalLightColor, 1, lightDot / 1);
+        }
+
+        vec3 ap = abs(nPoint);
+        float sp = 0.01 / vox.edge;
+        if(useEdging){
+            if(abs(ap.x - 1) < sp && abs(ap.y - 1) < sp ||
+            abs(ap.x - 1) < sp && abs(ap.z - 1) < sp ||
+            abs(ap.y - 1) < sp && abs(ap.z - 1) < sp)
+            {
+                // float xy = max(abs(ap.x - sp), abs(ap.y - sp));
+                // float xz = max(abs(ap.x - sp), abs(ap.z - sp));
+                // float yz = max(abs(ap.y - sp), abs(ap.z - sp));
+
+                float t = 1;
+                
+                t = min(sp / (max(abs(ap.x - 1),max(abs(ap.y - 1),abs(ap.z - 1)))) * 1, 1);
+                t += min(sp / (min(abs(ap.x - 1),min(abs(ap.y - 1),abs(ap.z - 1)))) * 1, 1);
+                t /= 2;
+
+                // col = ColorBlend(col, vec4(0), 10, t);
+                col = vec4(0);
+                // col = vec4(abs(ap.y - sp) * 10);
+            }
+        }
+
         col.w = 1;
     }else{
         col = background;
+    }
+
+    if(useSunGlare && vox.dist >= MAX_DIST_STATIC){
+        float sunDot = dot(rd, normalize(globalLightDirection));
+        if(sunDot < -0.999){
+            sunDot = 1 + sunDot;
+            sunDot *= 1000;
+            sunDot = (sunDot * -1) + 1;
+            // col = globalLightColor;
+            // col.w = 1;
+            col = ColorBlend(col, globalLightColor, 1 - sunDot, sunDot);
+        }
     }
 
     return col;
