@@ -18,12 +18,12 @@ using VMEngine.RMMath.RM;
 using VMEngine.GameComponents;
 using VMEngine.Engine;
 //using VMEngine.UI;
-using VMEngine.Voxel;
 using VMEngine.Physics;
+using VMEngine.Engine.Voxel;
 
 namespace VMEngine
 {
-	class VMEngine: GameWindow
+    class VMEngine: GameWindow
 	{
 		private GameObject[] _gmPool = new GameObject[256];
 		private RMMeshComponent[] _rmPool = new RMMeshComponent[256];

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VMEngine.Voxel;
+using VMEngine.Engine.Voxel;
 
 namespace VMEngine.Physics
 {
-	public class Hit
+    public class Hit
 	{
 		public Vector3 Position;
 		public VoxelOctree Voxel;
