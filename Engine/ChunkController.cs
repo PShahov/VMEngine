@@ -31,6 +31,7 @@ namespace VMEngine.Voxel
 						Chunks[x, y, z] = new VoxelOctree(center, VoxelOctree.DEFAULT_EDGE_SIZE, new VoxelColor(155, 100, 20));
 						Chunks[x, y, z].Divide();
 						Chunks[x, y, z].Divide();
+						Chunks[x, z, y].CalcArround();
 					}
 				}
 			}

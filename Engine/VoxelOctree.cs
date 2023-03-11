@@ -89,6 +89,7 @@ namespace VMEngine.Voxel
 		public const uint DEFAULT_VOXEL_COLOR = 0x777777FF;
 		public const byte MAX_SUB_LAYER = 8;
 		public const float DEFAULT_EDGE_SIZE = 12.8f;
+		public const float MIN_EDGE_SIZE = 0.1f;
 
 		public static Vector3[] DIAGONAL_DIRECTIONS = new Vector3[]
 		{
@@ -118,7 +119,7 @@ namespace VMEngine.Voxel
 		public byte Index = 1;
 		public VoxelOctree[] SubVoxels = new VoxelOctree[8];
 		public VoxelOctree ParentVoxel = null;
-		public byte State = 0b00000001;
+		public byte State = 0b00000011;
 		public VoxelColor Color = new VoxelColor(DEFAULT_VOXEL_COLOR);
 		public Vector3 Position = new Vector3();
 		public float EdgeSize = DEFAULT_EDGE_SIZE;
@@ -127,9 +128,11 @@ namespace VMEngine.Voxel
 		public uint CollisionMask = 1;
 		public uint VoxelBlockId = 1;
 
+		public bool IsLeaf { get { return SubVoxels[0] != null; } }
+
 		public bool CanDivide { get { return Index < MAX_SUB_LAYER; } }
 
-		public VoxelOctree(Vector3 position, float edgeSize, VoxelColor color, byte index = 1, byte state = 0b00000001)
+		public VoxelOctree(Vector3 position, float edgeSize, VoxelColor color, byte index = 1, byte state = 0b00000011)
 		{
 			Position = position;
 			EdgeSize = edgeSize;
@@ -188,6 +191,43 @@ namespace VMEngine.Voxel
 			return false;
 		}
 
+		public bool IsPointInsideRecursive(Vector3 pos, out VoxelOctree vox)
+		{
+			VoxelOctree oct = this;
+			while(oct.ParentVoxel != null) oct = oct.ParentVoxel;
+
+			while (oct.SubVoxels[0] != null)
+			{
+				bool b = false;
+				for(int i = 0;i < 8; i++)
+				{
+					if (oct.SubVoxels[i].IsPointInside(pos))
+					{
+						b = true;
+						oct = oct.SubVoxels[i];
+						break;
+					}
+				}
+				if (!b)
+				{
+					vox = oct;
+					return false;
+				}
+			}
+
+			if (oct.IsPointInside(pos))
+			{
+				vox = oct;
+				return true;
+			}
+			else
+			{
+				vox = oct;
+				return false;
+			}
+
+		}
+
 
 
 		public void CalcFullfilledState()
@@ -195,35 +235,29 @@ namespace VMEngine.Voxel
 			//if()
 		}
 
-		public void CalcSurround()
+		public void CalcArround()
 		{
-			if(Index <= 2)
-			{
-				SetState(VoxelStateIndex.Surrounded, false);
-			}
 
-			if (SubVoxels[0] != null)
-			{
-				for(int i = 0;i < 8; i++)
-				{
-					SubVoxels[i].CalcSurround();
-				}
-				return;
-			}
+			//VoxelOctree root = this;
+			//while(root.ParentVoxel != null) root = root.ParentVoxel;
+			//VoxelOctree[] leafs = root.GetAllSubvoxels();
 
-			bool surrounded = true;
-			for(int i = 0;i < AXIS_DIRECTIONS.Length; i++)
-			{
-				for(int j = 0;j < 8; j++)
-				{
-					if (this.ParentVoxel.SubVoxels[j].GetState(VoxelStateIndex.Fullfilled) == false) { surrounded = false; break; }
-					if (this.ParentVoxel.SubVoxels[j].IsPointInside(this.Position + (AXIS_DIRECTIONS[i] * (this.EdgeSize / 2 + 0.05f))) == false) { surrounded = false; break; }
+			//for(int i = 0;i < leafs.Length; i++)
+			//{
+			//	Vector3 pos = leafs[i].Position + (VoxelOctree.AXIS_DIRECTIONS[0] * (this.EdgeSize / 2 + MIN_EDGE_SIZE / 2));
+			//	bool filled = false;
+			//	for (int j = 0; j < leafs.Length; j++)
+			//	{
+			//		if (leafs[j].IsPointInside(pos))
+			//		{
+			//			filled = true;
+			//			//leafs[i].SetState(VoxelStateIndex.Surrounded, true);
+			//			break;
+			//		}
+			//	}
+			//	leafs[i].Color = filled ? new VoxelColor(0, 255, 0) : new VoxelColor(255, 0, 0);
+			//}
 
-				}
-				if (!surrounded) break;
-			}
-
-			this.SetState(VoxelStateIndex.Surrounded, surrounded);
 
 		}
 
@@ -240,7 +274,7 @@ namespace VMEngine.Voxel
 
 			void digDown(VoxelOctree oct)
 			{
-				if (oct.SubVoxels[0] != null)
+				if (oct.IsLeaf == false)
 				{
 					foreach (VoxelOctree sv in oct.SubVoxels)
 					{

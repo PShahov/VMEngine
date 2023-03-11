@@ -63,7 +63,7 @@ namespace VMEngine
 
 		Font mono = new Font("Impact");
 
-		//public Text _debugText = new Text();
+		public int voxelCount = 0;
 		public VMEngine(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
 		{
 			VSync = VSyncMode.On;
@@ -234,12 +234,12 @@ namespace VMEngine
 			{
 				//testOct.Divide();
 				VoxelOctree vox = ChunkController.Chunks[0,0,0];
-				while (vox.SubVoxels[0] != null)
-				{
-					vox = vox.SubVoxels[0];
-				}
+				//while (vox.SubVoxels[0] != null)
+				//{
+				//	vox = vox.SubVoxels[0];
+				//}
 				vox.Divide();
-				ChunkController.Chunks[0, 0, 0].CalcSurround();
+				ChunkController.Chunks[0, 0, 0].CalcArround();
 			}
 			if (MouseState.IsButtonPressed(MouseButton.Right))
 			{
@@ -247,7 +247,7 @@ namespace VMEngine
 				if (hit != null)
 				{
 					hit.Voxel.Divide();
-					ChunkController.Chunks[0, 0, 0].CalcSurround();
+					ChunkController.Chunks[0, 0, 0].CalcArround();
 					//hit.Voxel.Color = new VoxelColor(255, 0, 0);
 				}
 			}
@@ -257,7 +257,7 @@ namespace VMEngine
 				if (hit != null)
 				{
 					hit.Voxel.SetState(0, false);
-					ChunkController.Chunks[0, 0, 0].CalcSurround();
+					ChunkController.Chunks[0, 0, 0].CalcArround();
 				}
 			}
 			if (MouseState.IsButtonPressed(MouseButton.Middle))
@@ -296,6 +296,7 @@ namespace VMEngine
 				float[] arr = ChunkController.AllChunksFloats();
 				int l = arr.Length;
 				//test cube
+				voxelCount = (int)MathF.Floor(arr[3] / 5);
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
 
@@ -483,7 +484,7 @@ namespace VMEngine
 			while (Exists)
 			{
 
-				string s = (($"FPS: ~{1 / Time.deltaTime}"));
+				string s = $"Vox: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
 				UpdateTitleDebug("fps", s);
 				Title = s;
 
