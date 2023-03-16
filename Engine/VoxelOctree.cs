@@ -8,6 +8,22 @@ using System.Threading.Tasks;
 
 namespace VMEngine.Voxel
 {
+
+	public struct VoxelSortStruct
+	{
+		public float[] data;
+		public VoxelSortStruct(float[] data)
+		{
+			this.data = data;
+		}
+
+		public float distance(Vector3 offset)
+		{
+			return (Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)).SqrMagnitude() + (data[3] / 2);
+			//return (Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)).SqrMagnitude();
+			//return ((Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)) - (data[3]) / 2).vMax();
+		}
+	}
 	public struct VoxelColor
 	{
 		public byte[] Color;
@@ -128,7 +144,7 @@ namespace VMEngine.Voxel
 		public uint CollisionMask = 1;
 		public uint VoxelBlockId = 1;
 
-		public bool IsLeaf { get { return SubVoxels[0] != null; } }
+		public bool IsLeaf { get { return SubVoxels[0] == null; } }
 
 		public bool CanDivide { get { return Index < MAX_SUB_LAYER; } }
 
@@ -312,7 +328,10 @@ namespace VMEngine.Voxel
 				}
 				else
 				{
-					if(oct.GetState(VoxelStateIndex.FillState) && !oct.GetState(VoxelStateIndex.Surrounded))
+					if(
+						oct.GetState(VoxelStateIndex.FillState)
+						 //&& !oct.GetState(VoxelStateIndex.Surrounded)
+						)
 						list.AddRange(new float[]{// 5 * 4 bytes
 							oct.Position.x, oct.Position.y, oct.Position.z,
 							oct.EdgeSize,

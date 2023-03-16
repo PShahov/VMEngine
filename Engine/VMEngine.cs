@@ -239,7 +239,7 @@ namespace VMEngine
 				//	vox = vox.SubVoxels[0];
 				//}
 				vox.Divide();
-				ChunkController.Chunks[0, 0, 0].CalcArround();
+				//ChunkController.Chunks[0, 0, 0].CalcArround();
 			}
 			if (MouseState.IsButtonPressed(MouseButton.Right))
 			{
@@ -272,7 +272,7 @@ namespace VMEngine
 			if (KeyboardState.IsKeyPressed(Keys.Z))
 			{
 				float[] floats = ChunkController.AllChunksFloats();
-				Console.WriteLine(floats[3] / 5);
+				Console.WriteLine((Camera.mainCamera.gameObject.transform.position - new Vector3(floats[4], floats[5], floats[6])).Magnitude().ToString());
 			}
 
 

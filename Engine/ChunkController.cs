@@ -30,7 +30,6 @@ namespace VMEngine.Voxel
 					{
 						Chunks[x, y, z] = new VoxelOctree(center, VoxelOctree.DEFAULT_EDGE_SIZE, new VoxelColor(155, 100, 20));
 						Chunks[x, y, z].Divide();
-						Chunks[x, y, z].Divide();
 						Chunks[x, z, y].CalcArround();
 					}
 				}
@@ -90,13 +89,91 @@ namespace VMEngine.Voxel
 
 			float[] voxs = oct.ToArray();
 
+
+
 			List<float> floats = new List<float>(voxs.Length + 4);
+
 
 			floats.AddRange(oct.Position.ToArray());
 			floats.Add(voxs.Length);
-			floats.AddRange(voxs);
+			//floats.AddRange(voxs);
+			VoxelSortStruct[] vss = new VoxelSortStruct[voxs.Length / 5];
+			for(int i = 0;i < vss.Length; i++)
+			{
+				vss[i] = new VoxelSortStruct(new float[]
+				{
+					voxs[i * 5],
+					voxs[i * 5 + 1],
+					voxs[i * 5 + 2],
+					voxs[i * 5 + 3],
+					voxs[i * 5 + 4],
+				});
+			}
+			MergeSort(vss, 0, vss.Length - 1, oct.Position);
+			vss[0].data[4] = new VoxelColor(255, 0, 0, 255).ToFloat();
+
+			for(int i = 0;i < vss.Length; i++)
+			{
+				floats.AddRange(vss[i].data);
+			}
 
 			return floats.ToArray();
+		}
+
+		//метод для слияния массивов
+		static void Merge(VoxelSortStruct[] array, int lowIndex, int middleIndex, int highIndex, Vector3 offset)
+		{
+			var left = lowIndex;
+			var right = middleIndex + 1;
+			var tempArray = new VoxelSortStruct[highIndex - lowIndex + 1];
+			var index = 0;
+
+			while ((left <= middleIndex) && (right <= highIndex))
+			{
+				if (array[left].distance(offset) < array[right].distance(offset))
+				{
+					tempArray[index] = array[left];
+					left++;
+				}
+				else
+				{
+					tempArray[index] = array[right];
+					right++;
+				}
+
+				index++;
+			}
+
+			for (var i = left; i <= middleIndex; i++)
+			{
+				tempArray[index] = array[i];
+				index++;
+			}
+
+			for (var i = right; i <= highIndex; i++)
+			{
+				tempArray[index] = array[i];
+				index++;
+			}
+
+			for (var i = 0; i < tempArray.Length; i++)
+			{
+				array[lowIndex + i] = tempArray[i];
+			}
+		}
+
+		//сортировка слиянием
+		static VoxelSortStruct[] MergeSort(VoxelSortStruct[] array, int lowIndex, int highIndex, Vector3 offset)
+		{
+			if (lowIndex < highIndex)
+			{
+				var middleIndex = (lowIndex + highIndex) / 2;
+				MergeSort(array, lowIndex, middleIndex, offset);
+				MergeSort(array, middleIndex + 1, highIndex, offset);
+				Merge(array, lowIndex, middleIndex, highIndex, offset);
+			}
+
+			return array;
 		}
 
 		public static Hit CastRay(Vector3 origin, Vector3 direction, int mask, float distance = 0, bool filledOnly = true)

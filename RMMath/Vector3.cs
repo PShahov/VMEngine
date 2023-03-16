@@ -92,6 +92,7 @@ namespace VMEngine
 		public float Magnitude() { return (float)Math.Sqrt(this.x * this.x + this.y * this.y + this.z * this.z); }
 		public static float SqrMagnitude(Vector3 vector) { return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z; }
 		public float SqrMagnitude() { return this.x * this.x + this.y * this.y + this.z * this.z; }
+		public float StepMagnitude() { return this.x + this.y + this.z; }
 
 		public static Vector3 Abs(Vector3 v)
 		{
@@ -111,11 +112,17 @@ namespace VMEngine
 		public static Vector3 operator /(Vector3 a, Vector3 b) { return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z); }
 		public static Vector3 operator -(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
 		public static Vector3 operator *(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
+		public static Vector3 operator -(Vector3 a, float d) { return new Vector3(a.x - d, a.y - d, a.z - d); }
 		public static Vector3 operator *(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
 		public static Vector3 operator /(Vector3 a, float d) { return new Vector3(a.x / d, a.y / d, a.z / d); }
 
 		public static Vector3 operator +(Vector3 a, Vector2 b) { return new Vector3(a.x + b.X, a.y + b.Y, a.z); }
 		public static Vector3 operator -(Vector3 a, Vector2 b) { return new Vector3(a.x - b.X, a.y - b.Y, a.z); }
+
+		public float vMax()
+		{
+			return MathF.Max(MathF.Max(MathF.Abs(this.x), MathF.Abs(this.y)), MathF.Abs(this.z));
+		}
 
 		public float GetComponent(int index)
 		{
