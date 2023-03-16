@@ -13,13 +13,6 @@ namespace VMEngine
 		public static VMEngine vm;
 		static void Main(string[] args)
 		{
-			Console.ReadKey();
-
-			Chunk c = new Chunk();
-
-
-			Console.ReadKey();
-			return;
 			GameWindowSettings _gwSettings = new GameWindowSettings();
 			//_gwSettings
 			NativeWindowSettings _nwSettings = new NativeWindowSettings()

@@ -16,7 +16,7 @@ uniform vec3 u_camera_right;
 uniform vec3 u_camera_up;
 uniform vec3 u_camera_look_at;
 
-uniform float u_objects[1000];
+uniform float u_objects[1003];
 uniform int u_object_size;
 
 uniform bool u_fog = true;
@@ -75,8 +75,10 @@ vec3 globalLightDirection = vec3(1,-1,0.5);
 vec4 globalLightColor = vec4(1,1,1, 1);
 
 
-const float CHUNK_SIZE = 12.8;
-const float CHUNK_HALF_SIZE = 6.4;
+const float CHUNK_SIZE = 1;
+const float CHUNK_HALF_SIZE = 0.5;
+const float VOXEL_SIZE = 0.1;
+const float VOXEL_HALF_SIZE = 0.05;
 
 //0 - full colored;
 //1 - normals;

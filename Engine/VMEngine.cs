@@ -79,6 +79,7 @@ namespace VMEngine
 
 			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
 			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
+			Console.WriteLine($"GL_MAX_FRAGMENT_UNIFORM_COMPONENTS : {GL.GetInteger(GetPName.MaxFragmentUniformComponents)}");
 
 			Console.WriteLine(GL.GetString(StringName.Version));
 			Console.WriteLine(GL.GetString(StringName.Vendor));
@@ -230,50 +231,6 @@ namespace VMEngine
 			{
 				ChunkController.GenerateArea(Vector3.zero);
 			}
-			if (KeyboardState.IsKeyPressed(Keys.V))
-			{
-				//testOct.Divide();
-				VoxelOctree vox = ChunkController.Chunks[0,0,0];
-				//while (vox.SubVoxels[0] != null)
-				//{
-				//	vox = vox.SubVoxels[0];
-				//}
-				vox.Divide();
-				ChunkController.Chunks[0, 0, 0].CalcArround();
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Right))
-			{
-				Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				if (hit != null)
-				{
-					hit.Voxel.Divide();
-					ChunkController.Chunks[0, 0, 0].CalcArround();
-					//hit.Voxel.Color = new VoxelColor(255, 0, 0);
-				}
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Left))
-			{
-				Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				if (hit != null)
-				{
-					hit.Voxel.SetState(0, false);
-					ChunkController.Chunks[0, 0, 0].CalcArround();
-				}
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Middle))
-			{
-				Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				if (hit != null)
-				{
-					hit.Voxel.Color = new VoxelColor(155, 100, 20);
-				}
-			}
-
-			if (KeyboardState.IsKeyPressed(Keys.Z))
-			{
-				float[] floats = ChunkController.AllChunksFloats();
-				Console.WriteLine(floats[3] / 5);
-			}
 
 
 			Tick();
@@ -285,7 +242,6 @@ namespace VMEngine
 		private void Win_RenderFrame(FrameEventArgs e)
 		{
 			Time.renderDeltaTime = e.Time;
-			//GL.ClearColor(MathF.Abs(MathF.Sin(Time.alive)), MathF.Abs(MathF.Sin(Time.alive - 1f)), MathF.Abs(MathF.Sin(Time.alive + 1f)), 1);
 			GL.Clear(ClearBufferMask.ColorBufferBit);
 
 			Assets.Shaders["raymarch"].Use();
@@ -293,12 +249,12 @@ namespace VMEngine
 
 			try
 			{
-				float[] arr = ChunkController.AllChunksFloats();
+				float[] arr = ChunkController.GetFloats();
 				int l = arr.Length;
 				//test cube
 				voxelCount = (int)MathF.Floor(arr[3] / 5);
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), 1000);
 
 			}
 			catch (Exception ex)
