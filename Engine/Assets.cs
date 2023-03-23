@@ -19,10 +19,11 @@ namespace VMEngine
 		{
 			Meshes.Add("cube_01", new MeshAsset(CONTENT_DIR + "models\\cube_01.obj", 0.01f));
 			//textures.Add("tex01", new Texture2D(CONTENT_DIR + "tex\\test0.png"));
-			Textures.Add("tex02", Texture.LoadFromFile(CONTENT_DIR + "tex\\tex_01.png"));
-			Textures.Add("tex02_bump", Texture.LoadFromFile(CONTENT_DIR + "tex\\tex_01_bump.png"));
-			Textures.Add("tex01", Texture.LoadFromFile(CONTENT_DIR + "tex\\test0.png"));
-			Textures.Add("tex01_bump", Texture.LoadFromFile(CONTENT_DIR + "tex\\test0_bump.png"));
+			Textures.Add("testTex", Texture.LoadFromFile(CONTENT_DIR + "tex\\_tex_test.png"));
+			//Textures.Add("tex02", Texture.LoadFromFile(CONTENT_DIR + "tex\\tex_01.png"));
+			//Textures.Add("tex02_bump", Texture.LoadFromFile(CONTENT_DIR + "tex\\tex_01_bump.png"));
+			//Textures.Add("tex01", Texture.LoadFromFile(CONTENT_DIR + "tex\\test0.png"));
+			//Textures.Add("tex01_bump", Texture.LoadFromFile(CONTENT_DIR + "tex\\test0_bump.png"));
 			//textures.Add("tex02", new Texture(CONTENT_DIR + "tex\\_text02.bmp"));
 
 			//fonts.Add("roboto-regular", new Font(CONTENT_DIR + "fonts\\Roboto-Regular.ttf"));
@@ -40,23 +41,33 @@ namespace VMEngine
 
 			//sh = new Shader(CONTENT_DIR + "shaders\\first_vert.glsl", CONTENT_DIR + "shaders\\testRMShader.glsl");
 
+			//sh = new Shader(new string[]
+			//{
+			//	CONTENT_DIR + "shaders/build/header.glsl",
+			//	CONTENT_DIR + "shaders/build/vars.glsl",
+			//	CONTENT_DIR + "shaders/build/hg_sdf.glsl",
+			//	//CONTENT_DIR + "shaders/build/pbl_sdf.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_class.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_math.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_sdf_ID.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_models.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_mat.glsl",
+			//	CONTENT_DIR + "shaders/build/pbl_light.glsl",
+			//	CONTENT_DIR + "shaders/build/vertexShader_main.glsl",
+			//}, new string[]
+			//{
+			//	CONTENT_DIR + "shaders/build/fragmentShader_main.glsl"
+			//}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
+			//Shaders.Add("raymarch", sh);
+
 			sh = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/header.glsl",
-				CONTENT_DIR + "shaders/build/vars.glsl",
-				CONTENT_DIR + "shaders/build/hg_sdf.glsl",
-				//CONTENT_DIR + "shaders/build/pbl_sdf.glsl",
-				CONTENT_DIR + "shaders/build/pbl_class.glsl",
-				CONTENT_DIR + "shaders/build/pbl_math.glsl",
-				CONTENT_DIR + "shaders/build/pbl_sdf_ID.glsl",
-				CONTENT_DIR + "shaders/build/pbl_models.glsl",
-				CONTENT_DIR + "shaders/build/pbl_mat.glsl",
-				CONTENT_DIR + "shaders/build/pbl_light.glsl",
-				CONTENT_DIR + "shaders/build/vertexShader_main.glsl",
+				CONTENT_DIR + "shaders/build/3d/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/fragmentShader_main.glsl"
+				CONTENT_DIR + "shaders/build/3d/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
+
 			Shaders.Add("raymarch", sh);
 		}
 		public static void ReloadShaders()
@@ -66,21 +77,12 @@ namespace VMEngine
 
 			Shaders["raymarch"] = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/header.glsl",
-				CONTENT_DIR + "shaders/build/vars.glsl",
-				CONTENT_DIR + "shaders/build/hg_sdf.glsl",
-				//CONTENT_DIR + "shaders/build/pbl_sdf.glsl",
-				CONTENT_DIR + "shaders/build/pbl_class.glsl",
-				CONTENT_DIR + "shaders/build/pbl_math.glsl",
-				CONTENT_DIR + "shaders/build/pbl_sdf_ID.glsl",
-				CONTENT_DIR + "shaders/build/pbl_models.glsl",
-				CONTENT_DIR + "shaders/build/pbl_mat.glsl",
-				CONTENT_DIR + "shaders/build/pbl_light.glsl",
-				CONTENT_DIR + "shaders/build/vertexShader_main.glsl",
+				CONTENT_DIR + "shaders/build/3d/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/fragmentShader_main.glsl"
+				CONTENT_DIR + "shaders/build/3d/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
+
 			Shaders["raymarch"].Use();
 		}
 	}
@@ -144,7 +146,8 @@ namespace VMEngine
 									float.Parse(s[1]) * scale,
 									float.Parse(s[2]) * scale
 									),
-								OpenTK.Mathematics.Color4.Red
+								OpenTK.Mathematics.Color4.Red,
+								Vector3.zero
 								));
 							break;
 						}

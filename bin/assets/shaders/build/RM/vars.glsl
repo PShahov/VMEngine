@@ -58,6 +58,10 @@ const float sphereScale = 1.0 / 1;
 const float sphereBumpFactor = 0.21;
 
 //tex
+uniform sampler1D u_chunk_buffer;
+
+uniform samplerBuffer u_tbo_tex;
+
 uniform sampler2D u_tex_01;
 uniform sampler2D u_tex_01_bump;
 
@@ -72,22 +76,23 @@ uniform sampler2D u_tex_01_bump;
 
 vec3 globalLightDirection = vec3(1,-1,0.5);
 // vec4 globalLightColor = vec4(1.0, 0.81, 0.28, 1);
-vec4 globalLightColor = vec4(1,1,1, 1);
+vec4 globalLightColor = vec4(1, 1, 1, 1);
 
 
-const float CHUNK_SIZE = 12.8;
-const float CHUNK_HALF_SIZE = 6.4;
+const float CHUNK_SIZE = 1;
+const float CHUNK_HALF_SIZE = 0.5;
 
 //0 - full colored;
 //1 - normals;
 //2 - distance;
-const int colorMode = 0;
+const int colorMode = 1;
+
+#define VoxelEdging;
+#define GlobalIllumination;
+#define SunBloom;
 
 const bool useAmbientOcclusion = false;
-const bool useGlobalShadows = true;
 const bool useEdgeAmbient = false;
-const bool useEdging = true;
 
-const bool useSunGlare = true;
 
 const bool voxelColorNoise = true;

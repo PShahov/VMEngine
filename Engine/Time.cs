@@ -13,7 +13,7 @@ namespace VMEngine
 		public static float alive { get { return (DateTime.Now - _startTime).Ticks / 10000000f; } }
 
 		private static float _dt = 0;
-		private static float _alive = 0;
+		//private static float _alive = 0;
 		private static DateTime _lastTime = DateTime.Now;
 		public static DateTime _startTime = DateTime.Now;
 		public static void Tick()

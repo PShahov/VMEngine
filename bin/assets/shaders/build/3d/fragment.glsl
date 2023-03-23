@@ -25,4 +25,3 @@ void main()
     gl_Position = vec4(aPosition + offset, 1.0) * view * projection;
     // gl_Position = vec4(aPosition + offset, 1.0);
 }
-

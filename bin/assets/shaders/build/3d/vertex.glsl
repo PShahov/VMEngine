@@ -61,5 +61,3 @@ void main()
     // fragColor.w = 1;
     // fragColor = vec4(abs(vNormal), 1);
 }
-
-

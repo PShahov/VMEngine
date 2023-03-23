@@ -55,6 +55,7 @@ namespace VMEngine
 
 		public static Vector3 zero { get { return new Vector3(0, 0, 0); } }
 		public static Vector3 one { get { return new Vector3(1, 1, 1); } }
+		public static Vector3 half { get { return new Vector3(0.5f, 0.5f, 0.5f); } }
 		public static Vector3 up { get { return new Vector3(0, 1, 0); } }
 		public static Vector3 down { get { return new Vector3(0, -1, 0); } }
 		public static Vector3 right { get { return new Vector3(1, 0, 0); } }
@@ -98,6 +99,12 @@ namespace VMEngine
 		{
 			return new Vector3(MathF.Abs(v.x), MathF.Abs(v.y), MathF.Abs(v.z));
 		}
+		public Vector3 Abs()
+		{
+			return new Vector3(MathF.Abs(x), MathF.Abs(y), MathF.Abs(z));
+		}
+		public float Min() { return MathF.Min(x, MathF.Min(y, z)); }
+		public float Max() { return MathF.Max(x, MathF.Max(y, z)); }
 		public Vector3 abs
 		{
 			get
