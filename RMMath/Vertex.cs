@@ -45,20 +45,17 @@ namespace VMEngine
 
 		public Vector3 position;
 		public Color4 color;
-		public Vector3 normal;
 
 		public static readonly VertexInfo Info = new VertexInfo(
 			typeof(Vertex),
 			new VertexAttribute("Position", 0, 3, 0),
-			new VertexAttribute("Color", 1, 4, 3 * sizeof(float)),
-			new VertexAttribute("Normal", 2, 3, 7 * sizeof(float))
+			new VertexAttribute("Color", 1, 4, 3 * sizeof(float))
 			);
 
-		public Vertex(Vector3 position, Color4 color, Vector3 normal)
+		public Vertex(Vector3 position, Color4 color)
 		{
 			this.position = position;
 			this.color = color;
-			this.normal = normal;
 			//this.info = info;
 		}
 	}

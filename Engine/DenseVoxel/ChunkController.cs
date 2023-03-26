@@ -22,6 +22,8 @@ namespace VMEngine.Engine.DenseVoxel
 
         public static float ChunkSize = 1f;
 
+        //public static TextureBufferObject tbo;
+
         public static void GenerateArea(Vector3 center)
         {
             center -= new Vector3((SizeX - 1) * 0.5f, (SizeY - 1) * 0.5f, (SizeZ - 1) * 0.5f) * ChunkSize;
@@ -36,6 +38,9 @@ namespace VMEngine.Engine.DenseVoxel
                     }
                 }
             }
+
+			//tbo = new TextureBufferObject();
+   //         tbo.SetData(GetFloats());
 		}
 
 
@@ -55,16 +60,16 @@ namespace VMEngine.Engine.DenseVoxel
 
 		public static void Draw()
 		{
-			for (int x = 0; x < SizeX; x++)
-			{
-				for (int z = 0; z < SizeZ; z++)
-				{
-					for (int y = 0; y < SizeY; y++)
-					{
-                        Chunks[x, y, z].Draw();
-					}
-				}
-			}
+			//for (int x = 0; x < SizeX; x++)
+			//{
+			//	for (int z = 0; z < SizeZ; z++)
+			//	{
+			//		for (int y = 0; y < SizeY; y++)
+			//		{
+   //                     Chunks[x, y, z].Draw();
+			//		}
+			//	}
+			//}
 		}
 
         public static void UnbindAll()
@@ -81,70 +86,69 @@ namespace VMEngine.Engine.DenseVoxel
 			}
 		}
 
-		//public static float[] GetFloats()
-  //      {
-  //          Program.vm.voxelCount = 0;
+        public static float[] GetFloats()
+		{
+			//float[] floats = new float[Chunk.CHUNK_TOTAL_FLOATS];
+			float[] floats = null;
 
-  //          Chunk c = Chunks[0, 0, 0];
-  //          Block b = c.blocks[0,0,0];
-  //          float[] ret = new float[1003];
-		//	ret[0] = 0;
-		//	ret[1] = 0;
-		//	ret[2] = 0;
+			for (int x = 0; x < SizeX; x++)
+			{
+				for (int z = 0; z < SizeZ; z++)
+				{
+					for (int y = 0; y < SizeY; y++)
+					{
+						floats = Chunks[x, y, z].GetFloats();
+					}
+				}
+			}
 
-  //          for(int i = 0;i < 100; i++)
-  //          {
-  //              ret[i + 3] = new VoxelColor(b.data[i, 0], b.data[i, 1], 0, 0).ToFloat();
-		//		Program.vm.voxelCount++;
-		//	}
+            return floats;
+		}
 
-  //          return ret;
-		//}
+        //      public static void GenerateTexture()
+        //      {
+        //          int texWidth = TotalChunksCount;
+        //          int texHeight = Chunk.CHUNK_TOTAL_BLOCK * 1000;
 
-  //      public static void GenerateTexture()
-  //      {
-  //          int texWidth = TotalChunksCount;
-  //          int texHeight = Chunk.CHUNK_TOTAL_BLOCK * 1000;
+        //          Bitmap bmp = new Bitmap(texWidth, texHeight, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
+        //          Graphics g = Graphics.FromImage(bmp);
+        //          int i = 0;
+        //	for (int x = 0; x < SizeX; x++)
+        //	{
+        //		for (int z = 0; z < SizeZ; z++)
+        //		{
+        //			for (int y = 0; y < SizeY; y++)
+        //			{
 
-  //          Bitmap bmp = new Bitmap(texWidth, texHeight, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
-  //          Graphics g = Graphics.FromImage(bmp);
-  //          int i = 0;
-		//	for (int x = 0; x < SizeX; x++)
-		//	{
-		//		for (int z = 0; z < SizeZ; z++)
-		//		{
-		//			for (int y = 0; y < SizeY; y++)
-		//			{
-
-  //                      g.DrawImage(ChunkTexture(Chunks[x,y,z]), new Point(i, 0));
-  //                          i++;
-		//			}
-		//		}
-		//	}
-		//}
+        //                      g.DrawImage(ChunkTexture(Chunks[x,y,z]), new Point(i, 0));
+        //                          i++;
+        //			}
+        //		}
+        //	}
+        //}
 
 
-		//private static Bitmap ChunkTexture(Chunk chunk)
-  //      {
-  //          Bitmap bmp = new Bitmap(1, (Chunk.CHUNK_TOTAL_BLOCK * 1000) + 3, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
+        //private static Bitmap ChunkTexture(Chunk chunk)
+        //      {
+        //          Bitmap bmp = new Bitmap(1, (Chunk.CHUNK_TOTAL_BLOCK * 1000) + 3, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
 
-		//	for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++)
-		//	{
-		//		for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++)
-		//		{
-		//			for (int y = 0; y < Chunk.CHUNK_SIZE_Y; y++)
-		//			{
-		//				Block b = chunk.blocks[x, y, z];
-		//				for (int i = 0;i < 1000; i++)
-  //                      {
-  //                          //bmp.SetPixel(Color.)
-  //                      }
-		//			}
-		//		}
-		//	}
+        //	for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++)
+        //	{
+        //		for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++)
+        //		{
+        //			for (int y = 0; y < Chunk.CHUNK_SIZE_Y; y++)
+        //			{
+        //				Block b = chunk.blocks[x, y, z];
+        //				for (int i = 0;i < 1000; i++)
+        //                      {
+        //                          //bmp.SetPixel(Color.)
+        //                      }
+        //			}
+        //		}
+        //	}
 
-		//	return bmp;
-  //      }
+        //	return bmp;
+        //      }
 
 
         public static Hit CastRay(Vector3 origin, Vector3 direction, int mask, float distance = 0, bool filledOnly = true)

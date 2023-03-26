@@ -8,14 +8,14 @@ namespace VMEngine.GameComponents
 {
 	class GhostCameraController: Components.Component
 	{
-		private float speed = 5f;
+		private float speed = 1f;
 		private float sensevity = 0.25f;
 
 		public bool sendAlive = true;
 		public bool sendMousePos = true;
 
 		private float _lastClick = 0;
-		private float _clickCooldown = 0.1f;
+		private float _clickCooldown = 0.01f;
 
 		public override void Update()
 		{
@@ -40,8 +40,8 @@ namespace VMEngine.GameComponents
 			dir.z += Input.Keyboard.IsKeyDown(Keys.S) ? -1 : 0;
 			dir.y += Input.Keyboard.IsKeyDown(Keys.Space) ? 1 : 0;
 			dir.y += Input.Keyboard.IsKeyDown(Keys.C) ? -1 : 0;
-			dir.x += Input.Keyboard.IsKeyDown(Keys.D) ? 1 : 0;
-			dir.x += Input.Keyboard.IsKeyDown(Keys.A) ? -1 : 0;
+			dir.x += Input.Keyboard.IsKeyDown(Keys.D) ? -1 : 0;
+			dir.x += Input.Keyboard.IsKeyDown(Keys.A) ? 1 : 0;
 
 			dir = Camera.mainCamera.gameObject.transform.rotation.forward * dir.z +
 				Camera.mainCamera.gameObject.transform.rotation.left * dir.x +
@@ -52,7 +52,7 @@ namespace VMEngine.GameComponents
 			Camera.mainCamera.gameObject.transform.position += dir * speed * Time.deltaTime;
 			dir = Vector3.zero;
 			dir.y += Input.Mouse.Delta.Y * -1;
-			dir.x += Input.Mouse.Delta.X * 1;
+			dir.x += Input.Mouse.Delta.X * -1;
 
 			dir.x += Input.Keyboard.IsKeyDown(Keys.Left) ? 1 : 0;
 			dir.x += Input.Keyboard.IsKeyDown(Keys.Right) ? -1 : 0;
@@ -92,41 +92,73 @@ namespace VMEngine.GameComponents
 			b = ChunkController._RayAABBIntersection(
 				Camera.mainCamera.gameObject.transform.position,
 				Camera.mainCamera.gameObject.transform.rotation.forward,
-				Vector3.half * -5, Vector3.half * 5, out d
+				Vector3.half * -Chunk.CHUNK_EDGE, Vector3.half * Chunk.CHUNK_EDGE, out d
 				);
 
 			if(_lastClick + _clickCooldown < Time.alive)
 			{
 				if (Input.Mouse.IsButtonDown(MouseButton.Left) && b)
 				{
-					Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
-					Vector3 rd = this.gameObject.transform.rotation.forward;
-					Voxel[] v = ChunkController.Chunks[0, 0, 0].GetVoxelsInRadius(ro, 1);
-					for(int i = 0;i < v.Length;i++)
-					{
-						v[i].Filled = false;
-					}
-					ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
-					_lastClick = Time.alive;
 
-					//Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
-					//if (v != null)
-					//{
-					//	v.SetState(VoxelState.Filled, false);
-					//	ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
-					//	_lastClick = Time.alive;
-					//}
+					if (Input.Keyboard.IsKeyDown(Keys.LeftAlt) == false)
+					{
+						Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
+						Vector3 rd = this.gameObject.transform.rotation.forward;
+						Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
+						if (v != null)
+						{
+							v.Filled = false;
+							ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
+						}
+					}
+					else
+					{
+						Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
+						Vector3 rd = this.gameObject.transform.rotation.forward;
+						Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
+						if (v != null)
+						{
+							ro = ChunkController.Chunks[0, 0, 0].RayVoxelPosition(ro, rd);
+							Voxel[] va = ChunkController.Chunks[0, 0, 0].GetVoxelsInRadius(ro, 3);
+							for (int i = 0; i < va.Length; i++)
+							{
+								va[i].Filled = false;
+							}
+							ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
+						}
+						_lastClick = Time.alive + _clickCooldown * 10f;
+					}
 				}
 				if (Input.Mouse.IsButtonDown(MouseButton.Right) && b)
 				{
-					Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
-					Vector3 rd = this.gameObject.transform.rotation.forward;
-					Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
-					if (v != null)
+					if(Input.Keyboard.IsKeyDown(Keys.LeftAlt) == false)
 					{
-						v.CurrentColor = new float[] { 1, 0, 0, 1 };
-						ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
-						_lastClick = Time.alive;
+						Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
+						Vector3 rd = this.gameObject.transform.rotation.forward;
+						Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
+						if (v != null)
+						{
+							v.CurrentColor = new float[] { 1, 0, 0, 1 };
+							ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
+							_lastClick = Time.alive;
+						}
+					}
+					else
+					{
+						Vector3 ro = this.gameObject.transform.position + (this.gameObject.transform.rotation.forward * d);
+						Vector3 rd = this.gameObject.transform.rotation.forward;
+						Voxel v = ChunkController.Chunks[0, 0, 0].GetVoxelByRay(ro, rd);
+						if (v != null)
+						{
+							ro = ChunkController.Chunks[0, 0, 0].RayVoxelPosition(ro, rd);
+							Voxel[] va = ChunkController.Chunks[0, 0, 0].GetVoxelsInRadius(ro, 5);
+							for (int i = 0; i < va.Length; i++)
+							{
+								va[i].CurrentColor = new float[] { 1, 0, 0, 1 };
+							}
+							ChunkController.Chunks[0, 0, 0].flag_regenMesh = true;
+							_lastClick = Time.alive;
+						}
 					}
 				}
 			}

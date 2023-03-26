@@ -62,10 +62,12 @@ namespace VMEngine
 
 			sh = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/3d/vertex.glsl",
+				CONTENT_DIR + "shaders/build/traversal/header.glsl",
+				CONTENT_DIR + "shaders/build/traversal/support.glsl",
+				CONTENT_DIR + "shaders/build/traversal/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/3d/fragment.glsl"
+				CONTENT_DIR + "shaders/build/traversal/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
 
 			Shaders.Add("raymarch", sh);
@@ -77,10 +79,12 @@ namespace VMEngine
 
 			Shaders["raymarch"] = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/3d/vertex.glsl",
+				CONTENT_DIR + "shaders/build/traversal/header.glsl",
+				CONTENT_DIR + "shaders/build/traversal/support.glsl",
+				CONTENT_DIR + "shaders/build/traversal/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/3d/fragment.glsl"
+				CONTENT_DIR + "shaders/build/traversal/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
 
 			Shaders["raymarch"].Use();
@@ -146,8 +150,7 @@ namespace VMEngine
 									float.Parse(s[1]) * scale,
 									float.Parse(s[2]) * scale
 									),
-								OpenTK.Mathematics.Color4.Red,
-								Vector3.zero
+								OpenTK.Mathematics.Color4.Red
 								));
 							break;
 						}

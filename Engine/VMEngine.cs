@@ -61,7 +61,11 @@ namespace VMEngine
 
 		Font mono = new Font("Impact");
 
-		TextureBufferObject tbo;
+		public TextureBufferObject tbo;
+
+		public int _vertexArray;
+		//private int _vetrexBuffer;
+		private VertexBufferObject vbo;
 
 		public int voxelCount = 0;
 		public VMEngine(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
@@ -100,7 +104,7 @@ namespace VMEngine
 			_fpsThread.Start();
 
 
-			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -10f), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
+			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -2f), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
 			//Prefabs.testCube(new Vector3(0,-15f,0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(4, 0, 0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(-4, 0, 0), Quaternion.identity);
@@ -129,10 +133,79 @@ namespace VMEngine
 		private void Win_Load()
 		{
 			tbo = new TextureBufferObject();
+
+
+			try
+			{
+				float[] arr = ChunkController.GetFloats();
+				int l = arr.Length;
+				////test cube
+				voxelCount = (l - 3) / 5;
+				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+				tbo.SetData(arr);
+
+				tbo.Use(Assets.Shaders["raymarch"]);
+
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.ToString());
+			}
 			//camera = new Phantom.otkCamera(this);
 			CursorState = CursorState.Normal;
 
 
+			Vertex[] vertices = new Vertex[]
+			{
+				new Vertex(new Vector3(1f, 1f, 0), new Color4(1,0,0,0.1f)),//0
+				new Vertex(new Vector3(-1f, 1f, 0), new Color4(0,1,0,0.1f)),//1
+				new Vertex(new Vector3(-1f, -1f, 0), new Color4(0,0,1,0.1f)),//2
+				new Vertex(new Vector3(1f, 1f, 0), new Color4(1,0,0,0.1f)),//0
+				new Vertex(new Vector3(-1f, -1f, 0), new Color4(0,0,1,0.1f)),//2
+				new Vertex(new Vector3(1f, -1f, 0), new Color4(1,1,1,0.1f)),//3
+			};
+
+			int[] indices = new int[]
+			{
+				0,1,2,
+				3,4,5
+			};
+
+			Assets.Meshes["cube_01"].Vertices = vertices;
+			Assets.Meshes["cube_01"].Indices = indices;
+
+			vbo = new VertexBufferObject(Vertex.Info, Assets.Meshes["cube_01"].Vertices.Length);
+			vbo.SetData(Assets.Meshes["cube_01"].Vertices, Assets.Meshes["cube_01"].Vertices.Length);
+			vbo.PrimitiveType = PrimitiveType.Quads;
+
+			vbo.SetIndices(Assets.Meshes["cube_01"].Indices, Assets.Meshes["cube_01"].Indices.Length);
+
+
+			GL.BindBuffer(BufferTarget.ArrayBuffer, vbo.VertexBufferHandle);
+
+
+
+			_vertexArray = GL.GenVertexArray();
+			GL.BindVertexArray(_vertexArray);
+
+
+			int vertexSize = vbo.VertexInfo.size;
+			//vertices & color
+			for (int i = 0; i < Vertex.Info.attributes.Length; i++)
+			{
+				GL.VertexAttribPointer(
+					Vertex.Info.attributes[i].index,
+					Vertex.Info.attributes[i].count,
+					VertexAttribPointerType.Float,
+					false,
+					vertexSize,
+					//vertices.Length * Vertex.Info.size,
+					Vertex.Info.attributes[i].offset
+					);
+				GL.EnableVertexAttribArray(Vertex.Info.attributes[i].index);
+			}
+
+			GL.BindVertexArray(0);
 
 
 			GL.PointSize(5f);
@@ -178,56 +251,10 @@ namespace VMEngine
 			{
 				VSync = VSync == VSyncMode.On ? VSyncMode.Off : VSyncMode.On;
 			}
-			if (KeyboardState.IsKeyPressed(Keys.B))
-			{
-				ChunkController.GenerateArea(Vector3.zero);
-			}
-			if (KeyboardState.IsKeyDown(Keys.Q))
-			{
-				tbo.SetData(null);
-			}
-			if (KeyboardState.IsKeyPressed(Keys.V))
-			{
-				//testOct.Divide();
-				//VoxelOctree vox = ChunkController.Chunks[0,0,0];
-				//while (vox.SubVoxels[0] != null)
-				//{
-				//	vox = vox.SubVoxels[0];
-				//}
-				//vox.Divide();
-				//ChunkController.Chunks[0, 0, 0].CalcArround();
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Right))
-			{
-				Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				if (hit != null)
-				{
-					hit.Voxel.Divide();
-					ChunkController.Chunks[0, 0, 0].CalcArround();
-					//hit.Voxel.Color = new VoxelColor(255, 0, 0);
-				}
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Left))
-			{
-				Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				if (hit != null)
-				{
-					hit.Voxel.SetState(0, false);
-					ChunkController.Chunks[0, 0, 0].CalcArround();
-				}
-			}
-			if (MouseState.IsButtonPressed(MouseButton.Middle))
-			{
-				//Hit hit = ChunkController.CastRay(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, 1);
-				//if (hit != null)
-				//{
-				//	hit.Voxel.Color = new VoxelColor(155, 100, 20);
-				//}
-			}
 
-			if (KeyboardState.IsKeyPressed(Keys.Z))
+			if (KeyboardState.IsKeyDown(Keys.T))
 			{
-				ChunkController.Chunks[0, 0, 0].RegenMesh();
+				GL.Uniform3(Assets.Shaders["raymarch"].GetParam("globalLightDirection"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			}
 
 
@@ -247,26 +274,12 @@ namespace VMEngine
 			//Assets.Shaders["raymarch"].Use();
 
 
-			try
-			{
-				//float[] arr = ChunkController.GetFloats();
-				//int l = arr.Length;
-				////test cube
-				//voxelCount = (int)MathF.Floor(arr[3] / 5);
-				//GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
-				//tbo.SetData(arr);
-
-				//tbo.Use(Assets.Shaders["raymarch"]);
-
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.ToString());
-			}
 
 
 
-			ChunkController.Draw();
+			GL.BindVertexArray(_vertexArray);
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, vbo.IndexBufferHandle);
+			GL.DrawElements((PrimitiveType)4, Assets.Meshes["cube_01"].Indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
 
 
@@ -359,12 +372,12 @@ namespace VMEngine
 
 			ChunkController.Tick();
 
-			//Assets.Shaders["raymarch"].Use();
+			Assets.Shaders["raymarch"].Use();
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position"), Camera.mainCamera.gameObject.transform.position.vector3F);
 			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position_int"), Camera.mainCamera.gameObject.transform.position.vector3I);
-			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
-			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
-			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);
+			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
+			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
+			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);
 			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_look_at"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F + Camera.mainCamera.gameObject.transform.position.vector3F);
 
 
@@ -447,9 +460,9 @@ namespace VMEngine
 					b = ChunkController._RayAABBIntersection(
 						Camera.mainCamera.gameObject.transform.position,
 						Camera.mainCamera.gameObject.transform.rotation.forward,
-						Vector3.half * -5, Vector3.half * 5, out d
+						Vector3.half * -Chunk.CHUNK_EDGE, Vector3.half * Chunk.CHUNK_EDGE, out d
 						);
-				string s = $"AABB: {b},   FPS: ~{1 / Time.deltaTime}";
+				string s = $"AABB: {b},   Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
 				UpdateTitleDebug("fps", s);
 				Title = s;
 

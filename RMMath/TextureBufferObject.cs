@@ -7,7 +7,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace VMEngine
 {
-	class TextureBufferObject
+	public class TextureBufferObject
 	{
 		public int BufferHandle;
 		public int TextureHandle;

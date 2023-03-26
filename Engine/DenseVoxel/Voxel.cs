@@ -29,6 +29,7 @@ namespace VMEngine.Engine.DenseVoxel
 
 	public class Voxel
 	{
+		public static int FloatCount = 5;
 		public float[] InitialColor = new float[4];
 		public float[] CurrentColor = new float[4];
 
