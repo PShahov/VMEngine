@@ -72,12 +72,16 @@ namespace VMEngine
 
 
 			String infoLog = GL.GetProgramInfoLog(program);
-			Console.WriteLine(infoLog);
+			if(infoLog.Length != 0)
+				Console.WriteLine(infoLog);
 
 			infoLog = GL.GetShaderInfoLog(vertexShader);
-			Console.WriteLine(infoLog);
+			if (infoLog.Length != 0)
+				Console.WriteLine(infoLog);
+
 			infoLog = GL.GetShaderInfoLog(fragmentShader);
-			Console.WriteLine(infoLog);
+			if (infoLog.Length != 0)
+				Console.WriteLine(infoLog);
 
 			Handle = program;
 		}

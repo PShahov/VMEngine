@@ -18,10 +18,12 @@ using VMEngine.RMMath.RM;
 using VMEngine.GameComponents;
 using VMEngine.Engine;
 //using VMEngine.UI;
+using VMEngine.Physics;
+using VMEngine.Engine.DenseVoxel;
 
 namespace VMEngine
 {
-	class VMEngine: GameWindow
+    class VMEngine: GameWindow
 	{
 		private GameObject[] _gmPool = new GameObject[256];
 		private RMMeshComponent[] _rmPool = new RMMeshComponent[256];
@@ -51,24 +53,21 @@ namespace VMEngine
 		public float hfov = 90;
 		public float vfov = 90 / (800 / 600);
 
-		private int _vertexArray;
 		//private int _vetrexBuffer;
-		private VertexBufferObject vbo;
-		private int _indicesBuffer;
-
-		private Phantom.otkCamera camera;
-
-		private int test = 4;
 
 		private GhostCameraController ghost;
-
-		private VoxelOctree testOct = new VoxelOctree(Vector3.zero, 5, VoxelColor.Random());
 
 		//public TextRenderer DebugTextRenderer;
 
 		Font mono = new Font("Impact");
 
-		//public Text _debugText = new Text();
+		public TextureBufferObject tbo;
+
+		public int _vertexArray;
+		//private int _vetrexBuffer;
+		private VertexBufferObject vbo;
+
+		public int voxelCount = 0;
 		public VMEngine(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
 		{
 			VSync = VSyncMode.On;
@@ -80,10 +79,17 @@ namespace VMEngine
 			Load += Win_Load;
 			Resize += Win_Resize;
 			MouseMove += Win_MouseMove;
-			//Closed += Win_Closed;
+			Closed += Win_Closed;
 
+			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
+			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
 
-			testOct.Divide();
+			Console.WriteLine(GL.GetString(StringName.Version));
+			Console.WriteLine(GL.GetString(StringName.Vendor));
+			Console.WriteLine(GL.GetString(StringName.Renderer));
+			Console.WriteLine(GL.GetString(StringName.ShadingLanguageVersion));
+
+			ChunkController.GenerateArea(Vector3.zero);
 		}
 
 
@@ -93,23 +99,19 @@ namespace VMEngine
 
 			Assets.Load();
 
+
 			_fpsThread = new Thread(FpsCounter);
 			_fpsThread.Start();
 
 
-			ghost = Prefabs.prefab_cameraGhost(new Vector3(-5f, 5.25f, 0f), Quaternion.FromRadians(0, MathV.DegToRad(90), 0)).GetComponent<GhostCameraController>();
-			Prefabs.testCube(new Vector3(0,-1f,0), Quaternion.identity);
+			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -(ChunkController.SizeZ * Chunk.CHUNK_EDGE + 2f) / 2), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
+			//Prefabs.testCube(new Vector3(0,-15f,0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(4, 0, 0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(-4, 0, 0), Quaternion.identity);
 
 			//GameObject gm = Prefabs.prefab_rmSphere(new Vector3(0, 0, 10), fColor.Red, 1);
 			//gm.transform.rotation = Quaternion.FromRadians(Vector3.forward, MathV.DegToRad(45));
 
-
-			Console.WriteLine(GL.GetString(StringName.Version));
-			Console.WriteLine(GL.GetString(StringName.Vendor));
-			Console.WriteLine(GL.GetString(StringName.Renderer));
-			Console.WriteLine(GL.GetString(StringName.ShadingLanguageVersion));
 
 			//Assets.textures["tex01"].Bind();
 
@@ -120,13 +122,6 @@ namespace VMEngine
 			Assets.ReloadShaders();
 
 			GL.Uniform2(Assets.Shaders["raymarch"].GetParam("u_resolution"), new Vector2(Size.X, Size.Y));
-			//Assets.textures["tex01"].Bind();
-			//Assets.Textures["tex02"].Use(TextureUnit.Texture2);
-			//Assets.Textures["tex02_bump"].Use(TextureUnit.Texture3);
-			//Assets.Shaders["raymarch"].SetInt("u_tex_01", Assets.Textures["tex02"].Handle - 1);
-			//Assets.Shaders["raymarch"].SetInt("u_tex_01_bump", Assets.Textures["tex02_bump"].Handle - 1);
-			//_shader.SetInt("texture0", 0);
-			//_shader.SetInt("texture1", 1);
 		}
 
 		private void Win_Resize(ResizeEventArgs e)
@@ -137,11 +132,28 @@ namespace VMEngine
 
 		private void Win_Load()
 		{
+			tbo = new TextureBufferObject();
+
+
+			try
+			{
+				float[] arr = ChunkController.GetFloats();
+				int l = arr.Length;
+				////test cube
+				voxelCount = (l - 3) / 5;
+				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+				tbo.SetData(arr);
+
+				tbo.Use(Assets.Shaders["raymarch"]);
+
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.ToString());
+			}
 			//camera = new Phantom.otkCamera(this);
 			CursorState = CursorState.Normal;
 
-			Console.WriteLine(Quaternion.FromEulers(Vector3.up, 45).ToString());
-			Console.WriteLine(Quaternion.ToEuler(Quaternion.FromEulers(Vector3.up, 45)).y.ToString());
 
 			Vertex[] vertices = new Vertex[]
 			{
@@ -179,7 +191,7 @@ namespace VMEngine
 
 			int vertexSize = vbo.VertexInfo.size;
 			//vertices & color
-			for(int i = 0;i < Vertex.Info.attributes.Length; i++)
+			for (int i = 0; i < Vertex.Info.attributes.Length; i++)
 			{
 				GL.VertexAttribPointer(
 					Vertex.Info.attributes[i].index,
@@ -196,12 +208,14 @@ namespace VMEngine
 			GL.BindVertexArray(0);
 
 
-
 			GL.PointSize(5f);
 
-			//GL.Enable(EnableCap.DepthTest);
+			GL.Enable(EnableCap.CullFace);
+			GL.Enable(EnableCap.DepthTest);
 			GL.Enable(EnableCap.Blend);
 			GL.Enable(EnableCap.Texture2D);
+			GL.Enable(EnableCap.Lighting);
+			GL.Enable(EnableCap.Light0);
 			GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
 			Assets.Shaders["raymarch"].Use();
@@ -228,14 +242,6 @@ namespace VMEngine
 			{
 				CursorState = CursorState == CursorState.Normal ? CursorState.Grabbed : CursorState.Normal;
 			}
-			if (KeyboardState.IsKeyPressed(Keys.KeyPad2))
-			{
-				test++;
-			}
-			if (KeyboardState.IsKeyPressed(Keys.KeyPad1))
-			{
-				test--;
-			}
 			if (KeyboardState.IsKeyPressed(Keys.F2))
 			{
 				this._reloadShader();
@@ -245,33 +251,10 @@ namespace VMEngine
 			{
 				VSync = VSync == VSyncMode.On ? VSyncMode.Off : VSyncMode.On;
 			}
-			if (KeyboardState.IsKeyPressed(Keys.V))
-			{
-				testOct.Divide();
-			}
-			if (KeyboardState.IsKeyPressed(Keys.B))
-			{
-				float[] arr = testOct.ToArray();
 
-				string s = "";
-				int i = 0;
-				foreach(float f in arr)
-				{
-					s += $"{f}f, ";
-					i++;
-					if (i % 5 == 0) s += "\n";
-				}
-				Console.WriteLine(s);
-				Console.WriteLine("\n");
-				Console.WriteLine((arr.Length / 5).ToString());
-			}
-			if (KeyboardState.IsKeyPressed(Keys.N))
+			if (KeyboardState.IsKeyDown(Keys.T))
 			{
-				float[] arr = testOct.ToArray();
-				int l = arr.Length;
-				//test cube
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
+				GL.Uniform3(Assets.Shaders["raymarch"].GetParam("globalLightDirection"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			}
 
 
@@ -286,45 +269,18 @@ namespace VMEngine
 			Time.renderDeltaTime = e.Time;
 			//GL.ClearColor(MathF.Abs(MathF.Sin(Time.alive)), MathF.Abs(MathF.Sin(Time.alive - 1f)), MathF.Abs(MathF.Sin(Time.alive + 1f)), 1);
 			GL.Clear(ClearBufferMask.ColorBufferBit);
+			GL.Clear(ClearBufferMask.DepthBufferBit);
 
-			//Assets.Textures["tex01"].Use(TextureUnit.Texture0);
-			Assets.Shaders["raymarch"].Use();
+			//Assets.Shaders["raymarch"].Use();
 
 
-			List<float> list = new List<float>();
-
-			foreach (RMMeshComponent rmmesh in this._rmPool)
-			{
-				if (rmmesh != null)
-					list.AddRange(rmmesh.ToArray());
-			}
-
-			try
-			{
-				float[] arr = testOct.ToArray();
-				int l = arr.Length;
-				//test cube
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_objects"), l, arr);
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
-
-				//int arrayPtr = Assets.Shaders["raymarch"].GetParam("u_objects");
-				//float[] arr = list.ToArray();
-				////int l = 13 * sizeof(float);
-				//int l = arr.Length;
-				//GL.Uniform1(arrayPtr, l, arr);
-
-				//GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), _rmPoolActualLength);
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.ToString());
-			}
 
 
 
 			GL.BindVertexArray(_vertexArray);
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, vbo.IndexBufferHandle);
-			GL.DrawElements((PrimitiveType)test, Assets.Meshes["cube_01"].Indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
+			GL.DrawElements((PrimitiveType)4, Assets.Meshes["cube_01"].Indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
 
 
 			GL.Flush();
@@ -414,33 +370,23 @@ namespace VMEngine
 
 			Input.MouseDelta = Vector3.zero;
 
-
+			ChunkController.Tick();
 
 			Assets.Shaders["raymarch"].Use();
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position"), Camera.mainCamera.gameObject.transform.position.vector3F);
+			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_position_int"), Camera.mainCamera.gameObject.transform.position.vector3I);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);
-			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_look_at"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F + Camera.mainCamera.gameObject.transform.position.vector3F);
-			float zoom = 0;
-			if (Math.Abs(Input.Mouse.Scroll.Y) == 0)
-			{
-				zoom = 1;
-			}
-			else
-			{
-				zoom = Math.Abs(Input.Mouse.Scroll.Y);
-				if (Input.Mouse.Scroll.Y < 0)
-				{
-					zoom = 1 / MathF.Pow(Math.Abs(Input.Mouse.Scroll.Y), 2);
-				}
-			}
+			GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_chunks_count"), ChunkController.TotalChunksCount);
+			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_look_at"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F + Camera.mainCamera.gameObject.transform.position.vector3F);
 
-			GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_mouse_wheel"), zoom);
+
 			if (ghost.sendMousePos)
 				GL.Uniform2(Assets.Shaders["raymarch"].GetParam("u_mouse"), this.MousePosition);
 			if (ghost.sendAlive)
 				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_time"), Time.alive);
+
 		}
 
 
@@ -502,28 +448,35 @@ namespace VMEngine
 
 		private void Win_Closed()
 		{
-			GL.DeleteVertexArrays(1, ref _vertexArray);
+			ChunkController.UnbindAll();
 			Close();
 		}
 		private async void FpsCounter()
 		{
 			while (Exists)
 			{
+				float d = 0;
+				int b = -1;
+				if(Camera.mainCamera != null)
+				{
+					Chunk c = null;
+					c = ChunkController.aabbRayChunk(
+						Camera.mainCamera.gameObject.transform.position,
+						Camera.mainCamera.gameObject.transform.rotation.forward);
+					if (c != null) b = c.DataOffset;
+				}
+				int mouseWheel = 0;
+				if(Input.Mouse != null)
+				{
+					mouseWheel = (int)Input.Mouse.Scroll.Y;
+				}
 
-				string s = (($"FPS: ~{1 / Time.deltaTime}"));
+
+				string s = $"Wheel: {mouseWheel},   Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
 				UpdateTitleDebug("fps", s);
 				Title = s;
 
-				//Title = ghost.gameObject.transform.position.ToString();
-
-				//Title = (1 / Time.renderDeltaTime).ToString();
-				//Title = Camera.mainCamera.gameObject.transform.rotation.forward.ToString();
-				float u_opacity = -1;
-				GL.GetUniform(Assets.Shaders["raymarch"].Handle, Assets.Shaders["raymarch"].GetParam("u_opacity"), out u_opacity);
-				//GL.Uniform2(Assets.Shaders["raymarch"].GetParam("u_resolution"), new Vector2(Size.X, Size.Y));
-				//Title = u_opacity.ToString();
-
-				Thread.Sleep(250);
+				Thread.Sleep(50);
 
 			}
 

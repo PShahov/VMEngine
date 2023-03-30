@@ -2,6 +2,7 @@
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using System;
+using System.Text;
 
 namespace VMEngine
 {

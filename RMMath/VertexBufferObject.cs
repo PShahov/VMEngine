@@ -8,14 +8,14 @@ namespace VMEngine
 {
 	class VertexBufferObject: IDisposable
 	{
-		public static readonly int MaxVertexCount = 100_00;
-		public static readonly int MinVertexCount = 1;
+		public static readonly int MaxVertexCount = 1_000_000;
+		public static readonly int MinVertexCount = 0;
 
 		private bool _disposed;
 
 
 		public readonly VertexInfo VertexInfo;
-		public readonly int VertexCount;
+		public int VertexCount { private set; get; }
 		public int IndicesCount;
 
 		public int VertexBufferHandle;
@@ -23,6 +23,8 @@ namespace VMEngine
 		public int VertexArrayHandle;
 
 		public PrimitiveType PrimitiveType = PrimitiveType.Triangles;
+
+		public BufferUsageHint BufferUsage;
 
 		public VertexBufferObject(VertexInfo vertexInfo, int vertexCount, BufferUsageHint bufferUsage = BufferUsageHint.StaticDraw)
 		{
@@ -37,10 +39,11 @@ namespace VMEngine
 
 			this.VertexInfo = vertexInfo;
 			this.VertexCount = vertexCount;
+			this.BufferUsage = bufferUsage;
 
 			VertexBufferHandle = GL.GenBuffer();
 			GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferHandle);
-			GL.BufferData(BufferTarget.ArrayBuffer, VertexCount * VertexInfo.size, IntPtr.Zero, bufferUsage);
+			GL.BufferData(BufferTarget.ArrayBuffer, VertexCount * VertexInfo.size, IntPtr.Zero, BufferUsage);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
 		}
@@ -60,7 +63,7 @@ namespace VMEngine
 
 			VertexBufferHandle = GL.GenBuffer();
 			GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferHandle);
-			GL.BufferData(BufferTarget.ArrayBuffer, VertexCount * VertexInfo.size, IntPtr.Zero, bufferUsage);
+			GL.BufferData(BufferTarget.ArrayBuffer, VertexCount * VertexInfo.size, IntPtr.Zero, BufferUsage);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
 			//this.SetData();
@@ -85,7 +88,7 @@ namespace VMEngine
 			//{
 			//	throw new ArgumentOutOfRangeException(nameof(count));
 			//}
-
+			VertexCount = count;
 			GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferHandle);
 			GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, count * VertexInfo.size, data);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
@@ -96,7 +99,7 @@ namespace VMEngine
 
 			IndexBufferHandle = GL.GenBuffer();
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferHandle);
-			GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
+			GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsage);
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 			IndicesCount = count;
 			//IndexBufferHandle = GL.GenBuffer();
