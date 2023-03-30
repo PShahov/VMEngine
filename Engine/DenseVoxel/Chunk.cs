@@ -35,14 +35,16 @@ namespace VMEngine.Engine.DenseVoxel
 		public int _vertexArray;
 
 		public static int CHUNK_TOTAL_BLOCK { get { return CHUNK_EDGE * CHUNK_EDGE * CHUNK_EDGE * (DENSITY * DENSITY * DENSITY); } }
-		public static int CHUNK_TOTAL_FLOATS { get { return CHUNK_TOTAL_BLOCK * Voxel.FloatCount; } }
+		public static int CHUNK_TOTAL_FLOATS { get { return CHUNK_TOTAL_BLOCK * Voxel.FloatCount + 3; } }
 
 		public Voxel[,,] Voxels;
 		public Vector3 position = Vector3.zero;
+		public int DataOffset = 0;
 
-		public Chunk(Vector3 position)
+		public Chunk(Vector3 position, int dataOffset = 0)
 		{
 			this.position = position/* + Vector3.half * VOXEL_SIZE*/;
+			this.DataOffset = dataOffset;
 			int side = CHUNK_EDGE * DENSITY;
 			Voxels = new Voxel[side,side,side];
 			for (int x = 0; x < side; x++)
@@ -77,17 +79,18 @@ namespace VMEngine.Engine.DenseVoxel
 				if (Time.alive > _lastRegenMesh + UpdateFreq)
 				{
 					RecalcState();
-					RegenMesh();
+					//RegenMesh();
 
 					try
 					{
-						float[] arr = ChunkController.GetFloats();
+						float[] arr = this.GetFloats();
 						int l = arr.Length;
 						////test cube
 						GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
-						Program.vm.tbo.SetData(arr);
+						Program.vm.tbo.SetSubData(arr, DataOffset);
 
 						Program.vm.tbo.Use(Assets.Shaders["raymarch"]);
+						flag_regenMesh = false;
 
 					}
 					catch (Exception ex)
@@ -330,7 +333,7 @@ namespace VMEngine.Engine.DenseVoxel
 		public void RegenMesh()
 		{
 			_lastRegenMesh = Time.alive;
-			flag_regenMesh = false;
+			flag_regenMesh = true;
 
 		}
 
@@ -361,7 +364,7 @@ namespace VMEngine.Engine.DenseVoxel
 		public float[] GetFloats()
 		{
 			int side = CHUNK_EDGE * DENSITY;
-			float[] floats = new float[Chunk.CHUNK_TOTAL_FLOATS + 3];
+			float[] floats = new float[Chunk.CHUNK_TOTAL_FLOATS];
 			int i = 3;
 			floats[0] = this.position.x;
 			floats[1] = this.position.y;

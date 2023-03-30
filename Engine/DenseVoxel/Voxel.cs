@@ -11,7 +11,8 @@ namespace VMEngine.Engine.DenseVoxel
 	{
 		Filled = 0,
 		Fullfilled = 1,
-		Surrounded = 2
+		Surrounded = 2,
+
 	}
 
 	public enum VoxelDiagonalDirections

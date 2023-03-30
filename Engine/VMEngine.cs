@@ -104,7 +104,7 @@ namespace VMEngine
 			_fpsThread.Start();
 
 
-			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -2f), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
+			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -(ChunkController.SizeZ * Chunk.CHUNK_EDGE + 2f) / 2), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
 			//Prefabs.testCube(new Vector3(0,-15f,0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(4, 0, 0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(-4, 0, 0), Quaternion.identity);
@@ -378,6 +378,7 @@ namespace VMEngine
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);
+			GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_chunks_count"), ChunkController.TotalChunksCount);
 			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_look_at"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F + Camera.mainCamera.gameObject.transform.position.vector3F);
 
 
@@ -455,18 +456,27 @@ namespace VMEngine
 			while (Exists)
 			{
 				float d = 0;
-				bool b = false;
+				int b = -1;
 				if(Camera.mainCamera != null)
-					b = ChunkController._RayAABBIntersection(
+				{
+					Chunk c = null;
+					c = ChunkController.aabbRayChunk(
 						Camera.mainCamera.gameObject.transform.position,
-						Camera.mainCamera.gameObject.transform.rotation.forward,
-						Vector3.half * -Chunk.CHUNK_EDGE, Vector3.half * Chunk.CHUNK_EDGE, out d
-						);
-				string s = $"AABB: {b},   Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
+						Camera.mainCamera.gameObject.transform.rotation.forward);
+					if (c != null) b = c.DataOffset;
+				}
+				int mouseWheel = 0;
+				if(Input.Mouse != null)
+				{
+					mouseWheel = (int)Input.Mouse.Scroll.Y;
+				}
+
+
+				string s = $"Wheel: {mouseWheel},   Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
 				UpdateTitleDebug("fps", s);
 				Title = s;
 
-				Thread.Sleep(250);
+				Thread.Sleep(50);
 
 			}
 

@@ -13,6 +13,11 @@ struct Voxel{
     int state;
 };
 
+struct Chunk{
+    int offset;
+    float dist;
+};
+
 
 
 bool IsPointInside(vec3 pos)
@@ -76,4 +81,30 @@ float noise3(vec3 p){
     vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
 
     return o4.y * d.y + o4.x * (1.0 - d.y);
+}
+
+float Max(vec3 v) { return max(v.x, max(v.y, v.z)); }
+float Min(vec3 v) { return min(v.x, min(v.y, v.z)); }
+
+float MinNotNull(vec3 v){
+    float f = 0.5;
+    float eps = 0.1;
+    if(v.x > eps){
+        f = v.x;
+        if(v.y > eps){
+            f = min(f, v.y);
+        }
+        if(v.z > eps){
+            f = min(f, v.z);
+        }
+    }else if(v.y > eps){
+        f = v.y;
+        if(v.z > eps){
+            f = min(f, v.z);
+        }
+    }else{
+        f = v.z;
+    }
+
+    return f;
 }

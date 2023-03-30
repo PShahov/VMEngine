@@ -14,27 +14,31 @@ namespace VMEngine.Engine.DenseVoxel
     {
         public static Chunk[,,] Chunks { get; private set; }
 
-        public static int SizeX = 1;
+        public static int SizeX = 3;
         public static int SizeY = 1;
-        public static int SizeZ = 1;
+        public static int SizeZ = 3;
 
         public static int TotalChunksCount { get { return SizeX * SizeY * SizeZ; } }
 
-        public static float ChunkSize = 1f;
 
         //public static TextureBufferObject tbo;
 
         public static void GenerateArea(Vector3 center)
         {
-            center -= new Vector3((SizeX - 1) * 0.5f, (SizeY - 1) * 0.5f, (SizeZ - 1) * 0.5f) * ChunkSize;
+            center -= new Vector3((SizeX - 1) * 0.5f, (SizeY - 1) * 0.5f, (SizeZ - 1) * 0.5f) * Chunk.CHUNK_EDGE;
+
             Chunks = new Chunk[SizeX, SizeY, SizeZ];
+            int offset = 0;
             for (int x = 0; x < SizeX; x++)
             {
                 for (int z = 0; z < SizeZ; z++)
                 {
                     for (int y = 0; y < SizeY; y++)
                     {
-                        Chunks[x, y, z] = new Chunk(center + new Vector3(x * ChunkSize, y * ChunkSize, z * ChunkSize));
+                        Vector3 pos = center + new Vector3(x * Chunk.CHUNK_EDGE, y * Chunk.CHUNK_EDGE, z * Chunk.CHUNK_EDGE);
+
+						Chunks[x, y, z] = new Chunk(pos, offset);
+                        offset++;
                     }
                 }
             }
@@ -89,7 +93,7 @@ namespace VMEngine.Engine.DenseVoxel
         public static float[] GetFloats()
 		{
 			//float[] floats = new float[Chunk.CHUNK_TOTAL_FLOATS];
-			float[] floats = null;
+			List<float> floats = new List<float>();
 
 			for (int x = 0; x < SizeX; x++)
 			{
@@ -97,12 +101,12 @@ namespace VMEngine.Engine.DenseVoxel
 				{
 					for (int y = 0; y < SizeY; y++)
 					{
-						floats = Chunks[x, y, z].GetFloats();
+						floats.AddRange(Chunks[x, y, z].GetFloats());
 					}
 				}
 			}
 
-            return floats;
+            return floats.ToArray();
 		}
 
         //      public static void GenerateTexture()
@@ -188,6 +192,36 @@ namespace VMEngine.Engine.DenseVoxel
 
             return hit;
         }
+
+        public static Chunk aabbRayChunk(Vector3 ro, Vector3 rd)
+        {
+            float f = 0;
+            Chunk c = null;
+
+			for (int x = 0; x < SizeX; x++)
+			{
+				for (int z = 0; z < SizeZ; z++)
+				{
+					for (int y = 0; y < SizeY; y++)
+					{
+                        float _f;
+                        bool b = _RayAABBIntersection(ro, rd, Chunks[x, y, z].position - Vector3.half * Chunk.CHUNK_EDGE, Chunks[x, y, z].position + Vector3.half * Chunk.CHUNK_EDGE, out _f);
+
+                        if (b)
+                        {
+                            if(f > _f || c == null)
+                            {
+                                f = _f;
+                                c = Chunks[x, y, z];
+                            }
+                        }
+                    }
+				}
+			}
+
+            return c;
+
+		}
 
         public static bool _RayAABBIntersection(Vector3 ro, Vector3 rd, Vector3 boxMin, Vector3 boxMax, out float distance)
         {

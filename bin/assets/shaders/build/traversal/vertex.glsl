@@ -35,13 +35,25 @@ float intersectAABBdist(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
 
     return tNear;
 }
+void intersectAABBdist(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax, out float tNear, out float tFar) {
+    vec3 tMin = (boxMin - rayOrigin) / rayDir;
+    vec3 tMax = (boxMax - rayOrigin) / rayDir;
+    vec3 t1 = min(tMin, tMax);
+    vec3 t2 = max(tMin, tMax);
+    tNear = max(max(t1.x, t1.y), t1.z);
+    tFar = min(min(t2.x, t2.y), t2.z);
+
+    // return tNear;
+}
 
 
-Voxel GetVoxelByInd(ivec3 i){
+Voxel GetVoxelByInd(ivec3 i, int chunkOffset){
     int v = 5;
     int offset = i.x * VoxelPerRow * VoxelPerRow + i.y * VoxelPerRow + i.z;
     // offset = x * N * N + y * N + z
     offset *= v;
+    // offset += 500 * chunkOffset;
+    offset += PixelsInChunk * chunkOffset;
     offset += 3;
 
     
@@ -87,7 +99,7 @@ ivec3 GetIndByPos(vec3 pos, vec3 offset){
 
 
 
-VoxelHit renderChunk(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0){
+VoxelHit renderChunk(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0, float lastDist = 0){
     float dist = 0;
     bool intersect = intersectAABB(ro,rd, pos - vec3(ChunkSizeHalf), pos + vec3(ChunkSizeHalf), dist);
     VoxelHit vox = VoxelHit(vec3(0), vec3(0), vec3(0), maxRenderDistance + 1, vec4(1), false, 0);
@@ -97,21 +109,49 @@ VoxelHit renderChunk(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0){
 
     vec3 rp = ro + (rd * (dist + 0.0001));
     ivec3 ind = GetIndByPos(rp, pos);
-    Voxel vd = GetVoxelByInd(ind);
+    Voxel vd = GetVoxelByInd(ind, offset);
     intersect = bitInt(vd.state, 24);
+
+    vec3 dir = vec3(0);
+    vec3 voxCenter = vec3(0);
+
+    float c = 0;
+
+    float toCamDist = 0;
+
+    vec4 col = toCamDistArrayCol[0];
 
     while(IsPointInside(rp - pos) && intersect == false)
     {
-        rp = rp + (rd * (VoxelSize / 50));
+        
+        voxCenter =  pos - vec3(ChunkSizeHalf);
+        voxCenter += ((vec3(ind) * VoxelSize));
+        voxCenter += VoxelSize / 2;
+        float pNear = 0;
+        float pFar = 0;
+        intersectAABBdist(ro, rd, voxCenter - vec3(VoxelSize / 2), voxCenter + vec3(VoxelSize / 2), pNear, pFar);
+
+        float stpd = VoxelSize / 2;
+
+        float stp = stpd / toCamDist;
+
+        stp = abs(pFar - pNear) + EPSILON;
+        // stp = clamp(stp, EPSILON, VoxelSize / 2);
+
+
+        rp = rp + (rd * (stp));
         ind = GetIndByPos(rp, pos);
-        vd = GetVoxelByInd(ind);
+        vd = GetVoxelByInd(ind, offset);
         intersect = bitInt(vd.state, 24);
     }
 
-    
-    vec3 voxCenter =  pos - vec3(ChunkSizeHalf);
+
+    voxCenter =  pos - vec3(ChunkSizeHalf);
     voxCenter += ((vec3(ind) * VoxelSize));
     voxCenter += VoxelSize / 2;
+    
+    dir = voxCenter - rp;
+    
     bool intersectVox = intersectAABB(ro, rd, voxCenter - vec3(VoxelSize / 2), voxCenter + vec3(VoxelSize / 2), dist);
     bool inside = IsPointInside(voxCenter - pos);
     
@@ -124,11 +164,15 @@ VoxelHit renderChunk(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0){
         return vox;
     }
 
-    vec3 dir = voxCenter - hitPoint;
+    dir = voxCenter - hitPoint;
     dir *= -1;
     dir = normalize(dir);
     vec3 normal = BoxNormal(dir);
 
+
+    #ifdef showLOD
+        vd.color = col;
+    #endif
 
 
     dist = lengthSqr(ro - hitPoint);
@@ -136,6 +180,173 @@ VoxelHit renderChunk(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0){
     vox = VoxelHit(hitPoint, voxCenter, normal, dist, vd.color, intersect, vd.state);
     return vox;
 }
+
+VoxelHit renderChunkLights(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0){
+    float dist = 0;
+    bool intersect = intersectAABB(ro,rd, pos - vec3(ChunkSizeHalf), pos + vec3(ChunkSizeHalf), dist);
+    VoxelHit vox = VoxelHit(vec3(0), vec3(0), vec3(0), maxRenderDistance + 1, vec4(1), false, 0);
+    if(intersect == false){
+        return vox;
+    }
+
+    vec3 rp = ro + (rd * (dist + 0.0001));
+    ivec3 ind = GetIndByPos(rp, pos);
+    Voxel vd = GetVoxelByInd(ind, offset);
+    intersect = bitInt(vd.state, 24);
+
+    vec3 dir = vec3(0);
+    vec3 voxCenter = vec3(0);
+
+    float c = 0;
+
+    float toCamDist = 0;
+
+    vec4 col = toCamDistArrayCol[0];
+
+    while(IsPointInside(rp - pos) && intersect == false)
+    {
+        
+        voxCenter =  pos - vec3(ChunkSizeHalf);
+        voxCenter += ((vec3(ind) * VoxelSize));
+        voxCenter += VoxelSize / 2;
+        float pNear = 0;
+        float pFar = 0;
+        intersectAABBdist(ro, rd, voxCenter - vec3(VoxelSize / 2), voxCenter + vec3(VoxelSize / 2), pNear, pFar);
+
+        float stpd = VoxelSize / 2;
+
+        float stp = stpd / toCamDist;
+
+        stp = abs(pFar - pNear) + EPSILON;
+        // stp = clamp(stp, EPSILON, VoxelSize / 2);
+
+
+        rp = rp + (rd * (stp));
+        ind = GetIndByPos(rp, pos);
+        vd = GetVoxelByInd(ind, offset);
+        intersect = bitInt(vd.state, 24);
+    }
+
+
+    voxCenter =  pos - vec3(ChunkSizeHalf);
+    voxCenter += ((vec3(ind) * VoxelSize));
+    voxCenter += VoxelSize / 2;
+    
+    dir = voxCenter - rp;
+    
+    bool intersectVox = intersectAABB(ro, rd, voxCenter - vec3(VoxelSize / 2), voxCenter + vec3(VoxelSize / 2), dist);
+    bool inside = IsPointInside(voxCenter - pos);
+    
+    
+    vec3 hitPoint = ro + (rd * dist);
+
+    float dt = dot(rd, ro - hitPoint);
+
+    if(intersectVox = false){
+        return vox;
+    }
+
+    dir = voxCenter - hitPoint;
+    dir *= -1;
+    dir = normalize(dir);
+    vec3 normal = BoxNormal(dir);
+
+
+    #ifdef showLOD
+        vd.color = col;
+    #endif
+
+
+    dist = lengthSqr(ro - hitPoint);
+
+    vox = VoxelHit(hitPoint, voxCenter, normal, dist, vd.color, intersect, vd.state);
+    return vox;
+}
+
+VoxelHit RenderChunks(vec3 ro, vec3 rd){
+
+
+    // Chunk chunks[MAX_CHUNKS];
+
+    // for(int i = 0;i < u_chunks_count;i++){
+    //     vec3 pos = vec3(
+    //         TexelFetch4(i * PixelsInChunk + 0).x,
+    //         TexelFetch4(i * PixelsInChunk + 1).x,
+    //         TexelFetch4(i * PixelsInChunk + 2).x
+    //     );
+    //     float dist = lengthSqr(pos - ro);
+    //     chunks[i] = Chunk(i, dist);
+    // }
+    // for(int i = 0;i < u_chunks_count;i++){
+    //     for(int j = 0;j < u_chunks_count - 1;j++){
+    //         if(chunks[j].dist > chunks[j + 1].dist){
+    //             Chunk c = chunks[j];
+    //             chunks[j] = chunks[j + 1];
+    //             chunks[j + 1] = c;
+    //         }
+    //     }
+    // }
+
+    int o = 0;
+    vec3 pos = vec3(
+        TexelFetch4(o * PixelsInChunk + 0).x,
+        TexelFetch4(o * PixelsInChunk + 1).x,
+        TexelFetch4(o * PixelsInChunk + 2).x
+    );
+    VoxelHit vh = renderChunk(ro, rd, pos, o);
+
+    for(int i = 1;i < u_chunks_count;i++){
+        pos = vec3(
+            TexelFetch4(i * PixelsInChunk + 0).x,
+            TexelFetch4(i * PixelsInChunk + 1).x,
+            TexelFetch4(i * PixelsInChunk + 2).x
+        );
+        VoxelHit v = renderChunk(ro, rd, pos, i);
+        if((v.dist < vh.dist && v.crossed == true) || (vh.crossed == false)){
+            vh = v;
+            o = i;
+        }
+    }
+
+    return vh;
+}
+
+
+VoxelHit RenderChunksLight(vec3 ro, vec3 rd){
+
+    int o = 0;
+    vec3 pos = vec3(
+        TexelFetch4(o * PixelsInChunk + 0).x,
+        TexelFetch4(o * PixelsInChunk + 1).x,
+        TexelFetch4(o * PixelsInChunk + 2).x
+    );
+    VoxelHit vh = renderChunkLights(ro, rd, pos, o);
+
+    // if(vh.crossed == false){
+    //     return vh;
+    // }
+
+    for(int i = 1;i < u_chunks_count;i++){
+        pos = vec3(
+            TexelFetch4(i * PixelsInChunk + 0).x,
+            TexelFetch4(i * PixelsInChunk + 1).x,
+            TexelFetch4(i * PixelsInChunk + 2).x
+        );
+        VoxelHit v = renderChunkLights(ro, rd, pos, i);
+        
+        // if(v.crossed == false){
+        //     return vh;
+        // }
+        if((v.dist < vh.dist && v.crossed == true) || (vh.crossed == false)){
+            vh = v;
+            o = i;
+        }
+    }
+
+    return vh;
+}
+
+
 
 
 vec4 render(in vec2 uv){
@@ -148,14 +359,8 @@ vec4 render(in vec2 uv){
 
 
     
-    vec3 pos = vec3(
-        TexelFetch4(0).x,
-        TexelFetch4(1).x,
-        TexelFetch4(2).x
-    );
-    // pos = vec3(0,0,0);
 
-    VoxelHit vh = renderChunk(ro, rd, pos, 0);
+    VoxelHit vh = RenderChunks(ro, rd);
     
     if(vh.crossed)
     {
@@ -170,9 +375,9 @@ vec4 render(in vec2 uv){
                 vec3 so = vh.pos;
                 vec3 sd = globalLightDirection;
                 so += sd * (maxRenderDistance * -0.5);
-                // sd = 
+                // sd *= -1;
                 
-                VoxelHit srv = renderChunk(so, sd, pos, 0);
+                VoxelHit srv = RenderChunks(so, sd);
                 
                 
                 vec3 sunHitPoint = srv.pos;
@@ -181,24 +386,43 @@ vec4 render(in vec2 uv){
                 if(srv.crossed && dist < EPSILON){
                     color = ColorBlend(vh.color, globalLightColor, 1, lightDot / LightDotMultiplier);
                     // color = vec4(lightDot / 2,0,0,1);
+                    
+                    #ifdef ShowLightCalculations
+                        //if light calculated and pixel in shadow(green)
+                        color = vec4(0,1,0,1);
+                    #endif
                 }else{
                     color = ColorBlend(vh.color, vec4(0,0,0,1), 1, lightDot * ShadowDotMultiplier);
                     // color = vec4(0,1,0,1);
+
+                    #ifdef ShowLightCalculations
+                        //if the light is calculated and the pixel is lit(red)
+                        color = vec4(1,0,0,1);
+                    #endif
                 }
 
+                
+
             }else{
-                //if no need to calc GL (blue)
-                color = vec4(0,0,1,1);
 
                 //
                 //sunray-normal dot-light
                 //
                 color = ColorBlend(vh.color, vec4(0,0,0,1), 1, abs(lightDot) * ShadowDotMultiplier);
+
+                
+                #ifdef ShowLightCalculations
+                    //if no need to calc GL (blue)
+                    color = vec4(0,0,1,1);
+                #endif
             }
             #endif
+            #ifdef voxelNoise
+                float noise = noise3(vh.center * 10 - vec3(VoxelSize) * 5);
+                color = ColorBlend(color, vec4(vec3(noise), 1), 1, 0.05);
+            #endif
 
-            float noise = noise3(vh.center * 10 - vec3(VoxelSize) * 5);
-            color = ColorBlend(color, vec4(vec3(noise), 1), 1, 0.05);
+            
     }else{
         // color = vec3(0.15,0.55, 1);
         color = backgroundColor;
@@ -233,6 +457,8 @@ void main()
         color = vec4(1);
     }
         fragColor = color;
+
+        // if(u_chunks_count ==)
 
 
     // fragColor = vec4(1,0,0,1);
