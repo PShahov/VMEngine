@@ -84,6 +84,8 @@ namespace VMEngine
 			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
 			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
 
+			
+
 			Console.WriteLine(GL.GetString(StringName.Version));
 			Console.WriteLine(GL.GetString(StringName.Vendor));
 			Console.WriteLine(GL.GetString(StringName.Renderer));
@@ -210,6 +212,7 @@ namespace VMEngine
 
 			GL.PointSize(5f);
 
+			
 			GL.Enable(EnableCap.CullFace);
 			GL.Enable(EnableCap.DepthTest);
 			GL.Enable(EnableCap.Blend);
@@ -255,6 +258,19 @@ namespace VMEngine
 			if (KeyboardState.IsKeyDown(Keys.T))
 			{
 				GL.Uniform3(Assets.Shaders["raymarch"].GetParam("globalLightDirection"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
+			}
+
+			if (KeyboardState.IsKeyDown(Keys.PageUp))
+			{
+				ChunkController.SizeX++;
+				ChunkController.SizeZ++;
+				ChunkController.GenerateArea(Vector3.zero);
+			}
+			if (KeyboardState.IsKeyDown(Keys.PageDown))
+			{
+				ChunkController.SizeX--;
+				ChunkController.SizeZ--;
+				ChunkController.GenerateArea(Vector3.zero);
 			}
 
 

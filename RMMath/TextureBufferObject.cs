@@ -13,9 +13,9 @@ namespace VMEngine
 		public int BufferHandle;
 		public int TextureHandle;
 		public SizedInternalFormat Format;
-		public static int DataLength = Chunk.CHUNK_TOTAL_FLOATS * ChunkController.TotalChunksCount;
+		public static int DataLength = Chunk.CHUNK_TOTAL_FLOATS * 1;
 
-		public TextureBufferObject(float[] data = null, SizedInternalFormat format = SizedInternalFormat.R32f)
+		public TextureBufferObject(float[] data = null, SizedInternalFormat format = SizedInternalFormat.Rgba32f)
 		{
 			Format = format;
 
@@ -29,10 +29,11 @@ namespace VMEngine
 				}
 			}
 
+			nint length = (DataLength * sizeof(float));
 
 			GL.GenBuffers(1, out BufferHandle);
 			GL.BindBuffer(BufferTarget.TextureBuffer, BufferHandle);
-			GL.BufferData(BufferTarget.TextureBuffer, (IntPtr)(DataLength * sizeof(float)), data, BufferUsageHint.DynamicDraw);
+			GL.BufferData(BufferTarget.TextureBuffer, (IntPtr)length, data, BufferUsageHint.DynamicDraw);
 
 			GL.GenTextures(1, out TextureHandle);
 			GL.BindTexture(TextureTarget.TextureBuffer, TextureHandle);

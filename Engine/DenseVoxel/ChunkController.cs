@@ -14,9 +14,9 @@ namespace VMEngine.Engine.DenseVoxel
     {
         public static Chunk[,,] Chunks { get; private set; }
 
-        public static int SizeX = 3;
+        public static int SizeX = 5;
         public static int SizeY = 1;
-        public static int SizeZ = 3;
+        public static int SizeZ = 5;
 
         public static int TotalChunksCount { get { return SizeX * SizeY * SizeZ; } }
 

@@ -58,12 +58,12 @@ Voxel GetVoxelByInd(ivec3 i, int chunkOffset){
 
     
     vec4 voxColor = vec4(
-        TexelFetch4(offset + 0).x,
-        TexelFetch4(offset + 1).x,
-        TexelFetch4(offset + 2).x,
-        TexelFetch4(offset + 3).x
+        TexelFetch1(offset + 0),
+        TexelFetch1(offset + 1),
+        TexelFetch1(offset + 2),
+        TexelFetch1(offset + 3)
     );
-    int state = floatBitsToInt(TexelFetch4(offset + 4).x);
+    int state = floatBitsToInt(TexelFetch1(offset + 4));
 
     return Voxel(voxColor, state);
 }
@@ -289,17 +289,17 @@ VoxelHit RenderChunks(vec3 ro, vec3 rd){
 
     int o = 0;
     vec3 pos = vec3(
-        TexelFetch4(o * PixelsInChunk + 0).x,
-        TexelFetch4(o * PixelsInChunk + 1).x,
-        TexelFetch4(o * PixelsInChunk + 2).x
+        TexelFetch1(o * PixelsInChunk + 0),
+        TexelFetch1(o * PixelsInChunk + 1),
+        TexelFetch1(o * PixelsInChunk + 2)
     );
     VoxelHit vh = renderChunk(ro, rd, pos, o);
 
     for(int i = 1;i < u_chunks_count;i++){
         pos = vec3(
-            TexelFetch4(i * PixelsInChunk + 0).x,
-            TexelFetch4(i * PixelsInChunk + 1).x,
-            TexelFetch4(i * PixelsInChunk + 2).x
+            TexelFetch1(i * PixelsInChunk + 0),
+            TexelFetch1(i * PixelsInChunk + 1),
+            TexelFetch1(i * PixelsInChunk + 2)
         );
         VoxelHit v = renderChunk(ro, rd, pos, i);
         if((v.dist < vh.dist && v.crossed == true) || (vh.crossed == false)){
@@ -316,9 +316,9 @@ VoxelHit RenderChunksLight(vec3 ro, vec3 rd){
 
     int o = 0;
     vec3 pos = vec3(
-        TexelFetch4(o * PixelsInChunk + 0).x,
-        TexelFetch4(o * PixelsInChunk + 1).x,
-        TexelFetch4(o * PixelsInChunk + 2).x
+        TexelFetch1(o * PixelsInChunk + 0),
+        TexelFetch1(o * PixelsInChunk + 1),
+        TexelFetch1(o * PixelsInChunk + 2)
     );
     VoxelHit vh = renderChunkLights(ro, rd, pos, o);
 
@@ -328,9 +328,9 @@ VoxelHit RenderChunksLight(vec3 ro, vec3 rd){
 
     for(int i = 1;i < u_chunks_count;i++){
         pos = vec3(
-            TexelFetch4(i * PixelsInChunk + 0).x,
-            TexelFetch4(i * PixelsInChunk + 1).x,
-            TexelFetch4(i * PixelsInChunk + 2).x
+            TexelFetch1(i * PixelsInChunk + 0),
+            TexelFetch1(i * PixelsInChunk + 1),
+            TexelFetch1(i * PixelsInChunk + 2)
         );
         VoxelHit v = renderChunkLights(ro, rd, pos, i);
         
@@ -377,7 +377,7 @@ vec4 render(in vec2 uv){
                 so += sd * (maxRenderDistance * -0.5);
                 // sd *= -1;
                 
-                VoxelHit srv = RenderChunks(so, sd);
+                VoxelHit srv = RenderChunksLight(so, sd);
                 
                 
                 vec3 sunHitPoint = srv.pos;
