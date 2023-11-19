@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace VMEngine.Engine.UI
 {
-	public static class UI
-	{
-
-	}
+	//public class Canvas
+	//{
+	//	public 
+	//}
 }

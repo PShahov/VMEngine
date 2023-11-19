@@ -265,28 +265,6 @@ VoxelHit renderChunkLights(vec3 ro, vec3 rd, vec3 pos = vec3(0),  int offset = 0
 
 VoxelHit RenderChunks(vec3 ro, vec3 rd){
 
-
-    // Chunk chunks[MAX_CHUNKS];
-
-    // for(int i = 0;i < u_chunks_count;i++){
-    //     vec3 pos = vec3(
-    //         TexelFetch4(i * PixelsInChunk + 0).x,
-    //         TexelFetch4(i * PixelsInChunk + 1).x,
-    //         TexelFetch4(i * PixelsInChunk + 2).x
-    //     );
-    //     float dist = lengthSqr(pos - ro);
-    //     chunks[i] = Chunk(i, dist);
-    // }
-    // for(int i = 0;i < u_chunks_count;i++){
-    //     for(int j = 0;j < u_chunks_count - 1;j++){
-    //         if(chunks[j].dist > chunks[j + 1].dist){
-    //             Chunk c = chunks[j];
-    //             chunks[j] = chunks[j + 1];
-    //             chunks[j + 1] = c;
-    //         }
-    //     }
-    // }
-
     int o = 0;
     vec3 pos = vec3(
         TexelFetch4(o * PixelsInChunk + 0).x,

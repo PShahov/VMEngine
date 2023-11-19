@@ -19,7 +19,7 @@ using VMEngine.GameComponents;
 using VMEngine.Engine;
 //using VMEngine.UI;
 using VMEngine.Physics;
-using VMEngine.Engine.DenseVoxel;
+using VMEngine.Engine.HybridVoxel;
 
 namespace VMEngine
 {
@@ -38,6 +38,7 @@ namespace VMEngine
 		//public View view;
 
 		private Thread _fpsThread;
+		private Thread _asyncTickThread;
 
 		private Dictionary<String, String> _titleDebug = new Dictionary<string, string>();
 
@@ -53,19 +54,19 @@ namespace VMEngine
 		public float hfov = 90;
 		public float vfov = 90 / (800 / 600);
 
+		private int u_render_variant = 0;
+
 		//private int _vetrexBuffer;
 
 		private GhostCameraController ghost;
 
 		//public TextRenderer DebugTextRenderer;
 
-		Font mono = new Font("Impact");
-
-		public TextureBufferObject tbo;
 
 		public int _vertexArray;
 		//private int _vetrexBuffer;
 		private VertexBufferObject vbo;
+
 
 		public int voxelCount = 0;
 		public VMEngine(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
@@ -83,6 +84,8 @@ namespace VMEngine
 
 			Console.WriteLine($"GL_MAX_TEXTURE_SIZE: {GL.GetInteger(GetPName.MaxTextureSize)}");
 			Console.WriteLine($"GL_MAX_TEXTURE_BUFFER_SIZE: {GL.GetInteger(GetPName.MaxTextureBufferSize)}");
+			//Console.WriteLine($"VertexArraySize : {GL.GetInteger(GetPName.MaxVertexUniformVectors)}");
+			//Console.WriteLine($"MaxComputeWorkGroupCount: {GL.GetInteger((GetIndexedPName}");
 
 			Console.WriteLine(GL.GetString(StringName.Version));
 			Console.WriteLine(GL.GetString(StringName.Vendor));
@@ -95,16 +98,18 @@ namespace VMEngine
 
 		public void Start()
 		{
-
+			ChunkController.Startup();
 
 			Assets.Load();
 
 
 			_fpsThread = new Thread(FpsCounter);
 			_fpsThread.Start();
+			_asyncTickThread = new Thread(AsyncTick);
+			_asyncTickThread.Start();
 
 
-			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -(ChunkController.SizeZ * Chunk.CHUNK_EDGE + 2f) / 2), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
+			ghost = Prefabs.prefab_cameraGhost(new Vector3(0f, 0, -(ChunkController.AREA_SIZE_Z * Chunk.CHUNK_EDGE)), Quaternion.FromRadians(0, MathV.DegToRad(0), 0)).GetComponent<GhostCameraController>();
 			//Prefabs.testCube(new Vector3(0,-15f,0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(4, 0, 0), Quaternion.identity);
 			//Prefabs.testCube(new Vector3(-4, 0, 0), Quaternion.identity);
@@ -132,25 +137,11 @@ namespace VMEngine
 
 		private void Win_Load()
 		{
-			tbo = new TextureBufferObject();
 
+			Input.Keyboard = KeyboardState;
+			Input.Mouse = MouseState;
 
-			try
-			{
-				float[] arr = ChunkController.GetFloats();
-				int l = arr.Length;
-				////test cube
-				voxelCount = (l - 3) / 5;
-				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
-				tbo.SetData(arr);
-
-				tbo.Use(Assets.Shaders["raymarch"]);
-
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.ToString());
-			}
+			ChunkController.ForceChunksToGpu();
 			//camera = new Phantom.otkCamera(this);
 			CursorState = CursorState.Normal;
 
@@ -256,6 +247,59 @@ namespace VMEngine
 			{
 				GL.Uniform3(Assets.Shaders["raymarch"].GetParam("globalLightDirection"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			}
+			if (KeyboardState.IsKeyPressed(Keys.G))
+			{
+				u_render_variant++;
+				GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_render_variant"), u_render_variant);
+			}
+
+			if (KeyboardState.IsKeyPressed(Keys.D1))
+			{
+				ChunkController.Chunks[0, 0, 0].Octree.DivideLowestLeafs();
+				ChunkController.Chunks[0, 0, 0].flag_dataUpdateNeeded = true;
+				//ChunkController.ForceChunksToGpu();
+			}
+			if (KeyboardState.IsKeyPressed(Keys.D2))
+			{
+				ChunkController.Chunks[0, 0, 0].Octree.DivideFirstLowestLeafs();
+				ChunkController.Chunks[0, 0, 0].flag_dataUpdateNeeded = true;
+				//ChunkController.ForceChunksToGpu();
+			}
+			if (KeyboardState.IsKeyPressed(Keys.R))
+			{
+				ChunkController.Chunks[0, 0, 0].RegenChunk();
+				ChunkController.Chunks[0, 0, 0].flag_dataUpdateNeeded = true;
+				//ChunkController.ForceChunksToGpu();
+			}
+
+			if (Input.Mouse.IsButtonPressed(MouseButton.Left))
+			{
+				VoxelHit vh = new VoxelHit();
+				if (ChunkController.VoxelRaycast(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, out vh))
+				{
+					vh.Leaf.SetState(false, VoxelStateIndex.FillState);
+					vh.Chunk.flag_dataUpdateNeeded = true;
+				}
+			}
+
+			if (Input.Mouse.IsButtonPressed(MouseButton.Right))
+			{
+				VoxelHit vh = new VoxelHit();
+				if (ChunkController.VoxelRaycast(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, out vh))
+				{
+					vh.Leaf.Divide();
+					vh.Chunk.flag_dataUpdateNeeded = true;
+				}
+			}
+			if (Input.Mouse.IsButtonPressed(MouseButton.Button4))
+			{
+				VoxelHit vh = new VoxelHit();
+				if (ChunkController.VoxelRaycast(Camera.mainCamera.gameObject.transform.position, Camera.mainCamera.gameObject.transform.rotation.forward, out vh))
+				{
+					vh.Leaf.Color.Invert();
+					vh.Chunk.flag_dataUpdateNeeded = true;
+				}
+			}
 
 
 			Tick();
@@ -272,9 +316,6 @@ namespace VMEngine
 			GL.Clear(ClearBufferMask.DepthBufferBit);
 
 			//Assets.Shaders["raymarch"].Use();
-
-
-
 
 
 			GL.BindVertexArray(_vertexArray);
@@ -324,10 +365,13 @@ namespace VMEngine
 			//_debugText.DisplayedString = s;
 		}
 
+		public void AsyncTick()
+		{
+			ChunkController.AsyncTick();
+		}
+
 		private void Tick()
 		{
-			Input.Keyboard = KeyboardState;
-			Input.Mouse = MouseState;
 			int gm = 0;
 			int comps = 0;
 			for (int i = 0; i < _gmPool.Length; i++)
@@ -378,7 +422,7 @@ namespace VMEngine
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_forward"), Camera.mainCamera.gameObject.transform.rotation.forward.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_right"), Camera.mainCamera.gameObject.transform.rotation.right.vector3F);
 			GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_up"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F);
-			GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_chunks_count"), ChunkController.TotalChunksCount);
+			GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_chunks_count"), ChunkController.TOTAL_CHUNKS);
 			//GL.Uniform3(Assets.Shaders["raymarch"].GetParam("u_camera_look_at"), Camera.mainCamera.gameObject.transform.rotation.up.vector3F + Camera.mainCamera.gameObject.transform.position.vector3F);
 
 
@@ -448,8 +492,8 @@ namespace VMEngine
 
 		private void Win_Closed()
 		{
-			ChunkController.UnbindAll();
-			Close();
+			Console.WriteLine("Window closed");
+			//Close();
 		}
 		private async void FpsCounter()
 		{
@@ -457,22 +501,32 @@ namespace VMEngine
 			{
 				float d = 0;
 				int b = -1;
-				if(Camera.mainCamera != null)
-				{
-					Chunk c = null;
-					c = ChunkController.aabbRayChunk(
-						Camera.mainCamera.gameObject.transform.position,
-						Camera.mainCamera.gameObject.transform.rotation.forward);
-					if (c != null) b = c.DataOffset;
-				}
+				//if(Camera.mainCamera != null)
+				//{
+				//	Chunk c = null;
+				//	c = ChunkController.aabbRayChunk(
+				//		Camera.mainCamera.gameObject.transform.position,
+				//		Camera.mainCamera.gameObject.transform.rotation.forward);
+				//	if (c != null) b = c.DataOffset;
+				//}
 				int mouseWheel = 0;
 				if(Input.Mouse != null)
 				{
 					mouseWheel = (int)Input.Mouse.Scroll.Y;
 				}
 
+				int OctreeSize = ChunkController.Chunks[0, 0, 0].Octree.OctreeSize;
+				int OctreeLowIndex = ChunkController.Chunks[0, 0, 0].Octree.LowestIndex;
+				int LeafsCount = ChunkController.Chunks[0, 0, 0].Octree.LeafsCount;
 
-				string s = $"Wheel: {mouseWheel},   Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
+				string OctreeMemSize = "";
+				if (ChunkController.Chunks[0,0,0] != null)
+					if(ChunkController.Chunks[0, 0, 0].Data != null)
+						OctreeMemSize = Debug.SizeSuffix(ChunkController.Chunks[0, 0, 0].Data.Length * 4);
+
+				float LowestVoxSize = Chunk.CHUNK_EDGE / MathF.Pow(2,OctreeLowIndex);
+
+				string s = $"OctreeSize: {OctreeSize} nodes - {OctreeMemSize},    Lowest index: {OctreeLowIndex} - {LeafsCount} - {LowestVoxSize},    Voxels: {voxelCount},   FPS: ~{1 / Time.deltaTime}";
 				UpdateTitleDebug("fps", s);
 				Title = s;
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using VMEngine.Engine.HybridVoxel;
 
 namespace VMEngine
 {
@@ -45,6 +46,15 @@ namespace VMEngine
 			array[2] = z;
 			return array;
 		}
+		public byte[] ToByteArray()
+		{
+			byte[] array = new byte[3 * 4];
+			BitConverter.GetBytes(x).CopyTo(array, 0);
+			BitConverter.GetBytes(y).CopyTo(array, 4);
+			BitConverter.GetBytes(z).CopyTo(array, 8);
+
+			return array;
+		}
 
 		// *Undocumented*
 		public const float kEpsilon = 0.00001F;
@@ -63,6 +73,7 @@ namespace VMEngine
 		public static Vector3 forward { get { return new Vector3(0, 0, 1); } }
 		public static Vector3 back { get { return new Vector3(0, 0, -1); } }
 
+		public Vector3(float n) { this.x = n; this.y = n; this.z = n; }
 		public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
 		public Vector3(float x, float y) { this.x = x; this.y = y; z = 0F; }
 
@@ -70,6 +81,32 @@ namespace VMEngine
 		{
 			float mag = Magnitude(this);
 			this = this / mag;
+		}
+
+		public float VMax()
+		{
+			return MathF.Max(MathF.Max(x, y), z);
+		}
+		public static float VMax(Vector3 v)
+		{
+			return MathF.Max(MathF.Max(v.x, v.y), v.z);
+		}
+		public float VMin()
+		{
+			return MathF.Min(MathF.Min(x, y), z);
+		}
+		public static float VMin(Vector3 v)
+		{
+			return MathF.Min(MathF.Min(v.x, v.y), v.z);
+		}
+
+		public static Vector3 VMax(Vector3 a, Vector3 b)
+		{
+			return new Vector3(MathF.Max(a.x, b.x), MathF.Max(a.y, b.y), MathF.Max(a.z, b.z));
+		}
+		public static Vector3 VMin(Vector3 a, Vector3 b)
+		{
+			return new Vector3(MathF.Min(a.x, b.x), MathF.Min(a.y, b.y), MathF.Min(a.z, b.z));
 		}
 
 		public void ExcludeInfinity()
@@ -120,6 +157,7 @@ namespace VMEngine
 		public static Vector3 operator -(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
 		public static Vector3 operator *(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
 		public static Vector3 operator -(Vector3 a, float d) { return new Vector3(a.x - d, a.y - d, a.z - d); }
+		public static Vector3 operator +(Vector3 a, float d) { return new Vector3(a.x + d, a.y + d, a.z + d); }
 		public static Vector3 operator *(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
 		public static Vector3 operator /(Vector3 a, float d) { return new Vector3(a.x / d, a.y / d, a.z / d); }
 

@@ -24,7 +24,7 @@ namespace VMEngine.Engine.DenseVoxel
 		//public static int CHUNK_SIZE_X = 16;
 		//public static int CHUNK_SIZE_Y = 64;
 		//public static int CHUNK_SIZE_Z = 16;
-		public static int CHUNK_EDGE = 3;
+		public static int CHUNK_EDGE = 2;
 
 		public static int DENSITY = 10;
 
@@ -87,9 +87,9 @@ namespace VMEngine.Engine.DenseVoxel
 						int l = arr.Length;
 						////test cube
 						GL.Uniform1(Assets.Shaders["raymarch"].GetParam("u_object_size"), l / 5);
-						Program.vm.tbo.SetSubData(arr, DataOffset);
+						//Program.vm.tbo.SetSubData(arr, DataOffset);
 
-						Program.vm.tbo.Use(Assets.Shaders["raymarch"]);
+						//Program.vm.tbo.Use(Assets.Shaders["raymarch"]);
 						flag_regenMesh = false;
 
 					}

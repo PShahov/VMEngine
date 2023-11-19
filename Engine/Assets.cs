@@ -7,6 +7,10 @@ namespace VMEngine
 {
 	static class Assets
 	{
+		//public static string ShaderFolder = "octree_traversal";
+		public static string ShaderFolder = "hybrid";
+		//public static string ShaderFolder = "traversal";
+
 		public static readonly string CONTENT_DIR = "..\\..\\..\\assets\\";
 
 		public static Dictionary<String, Texture2D> textures = new Dictionary<string, Texture2D>();
@@ -60,14 +64,24 @@ namespace VMEngine
 			//}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
 			//Shaders.Add("raymarch", sh);
 
+			//sh = new Shader(new string[]
+			//{
+			//	CONTENT_DIR + "shaders/build/traversal/header.glsl",
+			//	CONTENT_DIR + "shaders/build/traversal/support.glsl",
+			//	CONTENT_DIR + "shaders/build/traversal/vertex.glsl",
+			//}, new string[]
+			//{
+			//	CONTENT_DIR + "shaders/build/traversal/fragment.glsl"
+			//}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
+
 			sh = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/traversal/header.glsl",
-				CONTENT_DIR + "shaders/build/traversal/support.glsl",
-				CONTENT_DIR + "shaders/build/traversal/vertex.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/header.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/support.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/traversal/fragment.glsl"
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
 
 			Shaders.Add("raymarch", sh);
@@ -79,12 +93,12 @@ namespace VMEngine
 
 			Shaders["raymarch"] = new Shader(new string[]
 			{
-				CONTENT_DIR + "shaders/build/traversal/header.glsl",
-				CONTENT_DIR + "shaders/build/traversal/support.glsl",
-				CONTENT_DIR + "shaders/build/traversal/vertex.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/header.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/support.glsl",
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/vertex.glsl",
 			}, new string[]
 			{
-				CONTENT_DIR + "shaders/build/traversal/fragment.glsl"
+				CONTENT_DIR + "shaders/build/" + ShaderFolder + "/fragment.glsl"
 			}, CONTENT_DIR + "shaders/compiled/vertex.glsl", CONTENT_DIR + "shaders/compiled/fragment.glsl");
 
 			Shaders["raymarch"].Use();

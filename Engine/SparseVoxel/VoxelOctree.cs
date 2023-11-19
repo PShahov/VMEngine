@@ -10,122 +10,11 @@ using System.Threading.Tasks;
 namespace VMEngine.Engine.SparseVoxel
 {
 
-    public struct VoxelSortStruct
-    {
-        public float[] data;
-        public VoxelSortStruct(float[] data)
-        {
-            this.data = data;
-        }
-
-        public float distance(Vector3 offset)
-		{
-            return (Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset) - new Vector3(data[3] / 2, data[3] / 2, data[3] / 2)).SqrMagnitude();
-
-            //return (Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)).SqrMagnitude() + data[3] / 2;
-            //return (Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)).SqrMagnitude();
-            //return ((Camera.mainCamera.gameObject.transform.position - (new Vector3(data[0], data[1], data[2]) + offset)) - (data[3]) / 2).vMax();
-        }
-	}
-    public struct VoxelColor
-    {
-        public byte[] Color;
-
-        public byte R
-        {
-            get { return Color[0]; }
-            set { Color[0] = value; }
-        }
-        public byte G
-        {
-            get { return Color[1]; }
-            set { Color[1] = value; }
-        }
-        public byte B
-        {
-            get { return Color[2]; }
-            set { Color[2] = value; }
-        }
-        public byte A
-        {
-            get { return Color[3]; }
-            set { Color[3] = value; }
-        }
-
-        public VoxelColor(byte r, byte g, byte b, byte a = 1)
-        {
-            Color = new byte[] { r, g, b, a };
-        }
-        public VoxelColor(uint hex = 0xff0000ff)
-        {
-            Color = BitConverter.GetBytes(hex);
-        }
-
-        public static Color FloatToColor(float value)
-        {
-            byte[] bytes = BitConverter.GetBytes(value);
-            return System.Drawing.Color.FromArgb(bytes[0], bytes[1], bytes[2], bytes[3]);
-        }
-        public static float ColorToFloat(Color value)
-        {
-            return new VoxelColor(value.A, value.R, value.G, value.B).ToFloat(true);
-        }
-
-        public float ToFloat(bool backwards = false)
-        {
-            //a
-            //b
-            //g
-            //r
-            //return System.BitConverter.ToSingle(new byte[] { 0x00, 0x00, 0x00, 0xff });
-            if (backwards)
-            {
-                return BitConverter.ToSingle(new byte[] { Color[0], Color[1], Color[2], Color[3] });
-            }
-            else
-            {
-                return BitConverter.ToSingle(new byte[] { Color[3], Color[2], Color[1], Color[0] });
-            }
-        }
-        public static VoxelColor Random()
-        {
-            Random r = new Random();
-            //uint hex = (uint)r.NextInt64(uint.MaxValue);
-            VoxelColor v = new VoxelColor((byte)r.Next(256), (byte)r.Next(256), (byte)r.Next(256));
-            //v = new VoxelColor(0, 255, 0, 255);
-            return v;
-        }
-        public override string ToString()
-        {
-            return $"R: {R}, G: {G}, B: {B}, A:{A}";
-        }
-    }
-
-    public enum VoxelStateIndex
-    {
-        FillState = 0,
-        Fullfilled = 1,
-        Surrounded = 2
-    }
-
-    public enum VoxelDiagonalDirections
-    {
-        LTF = 0,
-        RTF = 1,
-        RTN = 2,
-        LTN = 3,
-        LBF = 4,
-        RBF = 5,
-        RBN = 6,
-        LBN = 7
-    }
-
     public class VoxelOctree
     {
+		public static float[] EDGE_SIZE = new float[] { 16f, 8f, 4f, 2f, 1f, 0.5f, 0.25f, 0.125f, 0.625f};
         public const uint DEFAULT_VOXEL_COLOR = 0x777777FF;
-        public const byte MAX_SUB_LAYER = 8;
-        public const float DEFAULT_EDGE_SIZE = 12.8f;
-        public const float MIN_EDGE_SIZE = 0.1f;
+        public const byte MAX_SUB_LAYER = 9;
 
         public static Vector3[] DIAGONAL_DIRECTIONS = new Vector3[]
         {
@@ -158,7 +47,6 @@ namespace VMEngine.Engine.SparseVoxel
         public byte State = 0b00000011;
         public VoxelColor Color = new VoxelColor(DEFAULT_VOXEL_COLOR);
         public Vector3 Position = new Vector3();
-        public float EdgeSize = DEFAULT_EDGE_SIZE;
 
         public uint VoxelMaterial = 0;
         public uint CollisionMask = 1;
@@ -171,7 +59,6 @@ namespace VMEngine.Engine.SparseVoxel
         public VoxelOctree(Vector3 position, float edgeSize, VoxelColor color, byte index = 1, byte state = 0b00000011)
         {
             Position = position;
-            EdgeSize = edgeSize;
             Color = color;
             Index = index;
             State = state;
@@ -190,8 +77,8 @@ namespace VMEngine.Engine.SparseVoxel
                 }
                 return;
             }
-            float offset = EdgeSize / 4;
-            float edge = EdgeSize / 2;
+            float offset = GetEdgeSize() / 4;
+            float edge = GetEdgeSize() / 2;
             byte index = (byte)(Index + 1);
 
             for (int i = 0; i < 8; i++)
@@ -210,10 +97,15 @@ namespace VMEngine.Engine.SparseVoxel
 
         //}
 
+        public float GetEdgeSize()
+        {
+            return EDGE_SIZE[Index - 1];
+        }
+
         public bool IsPointInside(Vector3 pos)
         {
-            Vector3 min = Position - Vector3.one * 0.5f * EdgeSize;
-            Vector3 max = Position + Vector3.one * 0.5f * EdgeSize;
+            Vector3 min = Position - Vector3.one * 0.5f * GetEdgeSize();
+            Vector3 max = Position + Vector3.one * 0.5f * GetEdgeSize();
 
             //Check if the point is less than max and greater than min
             if (pos.x > min.x && pos.x < max.x &&
@@ -354,7 +246,7 @@ namespace VMEngine.Engine.SparseVoxel
                         )
                         list.AddRange(new float[]{// 5 * 4 bytes
 							oct.Position.x, oct.Position.y, oct.Position.z,
-                            oct.EdgeSize,
+                            oct.GetEdgeSize(),
                             oct.Color.ToFloat(),
                         });
                 }

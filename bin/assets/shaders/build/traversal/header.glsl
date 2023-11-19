@@ -23,9 +23,9 @@ const float FOV = 1.0;
 
 // #define showLOD
 
-#define ChunkSize 3
-#define ChunkSizeHalf 1.5
-#define VoxelPerRow 30
+#define ChunkSize 2
+#define ChunkSizeHalf 1
+#define VoxelPerRow 20
 #define VoxelSize 0.1
 #define FloatsPerVoxel 5
 #define PixelsInChunk ((VoxelPerRow * VoxelPerRow * VoxelPerRow * FloatsPerVoxel) + 3)

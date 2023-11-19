@@ -17,16 +17,22 @@ namespace VMEngine.Engine.SparseVoxel
     public static class ChunkController
     {
         public static VoxelOctree[,,] Chunks { get; private set; }
+		public static double TotalChunksCount { get; internal set; }
 
-        public static int SizeX = 1;
+		public static int SizeX = 1;
         public static int SizeY = 1;
         public static int SizeZ = 1;
 
-        public static float ChunkSize = 12.8f;
+        public static float ChunkSize = 8f;
 
         public static int TexBufHandle = 1;
 
         public static void Startup()
+        {
+
+        }
+
+        public static void Tick()
         {
 
         }
@@ -41,9 +47,9 @@ namespace VMEngine.Engine.SparseVoxel
                 {
                     for (int y = 0; y < SizeY; y++)
                     {
-                        Chunks[x, y, z] = new VoxelOctree(center, VoxelOctree.DEFAULT_EDGE_SIZE, new VoxelColor(155, 100, 20));
-                        Chunks[x, y, z].Divide();
-                        Chunks[x, z, y].CalcArround();
+                        Chunks[x, y, z] = new VoxelOctree(center, VoxelOctree.EDGE_SIZE[0], new VoxelColor(155, 100, 20));
+                        //Chunks[x, y, z].Divide();
+                        //Chunks[x, z, y].CalcArround();
                     }
                 }
             }
@@ -51,8 +57,8 @@ namespace VMEngine.Engine.SparseVoxel
 
         public static Bitmap GenerateTexture()
         {
-            float[] floats = AllChunksFloats();
-            byte[] bytes = FloatsToBytes(AllChunksFloats());
+            float[] floats = GetFloats();
+            byte[] bytes = FloatsToBytes(floats);
             //float[] floats2 = BytesToFloats(bytes);
             //Bitmap bmp;
             //using (MemoryStream ms = new MemoryStream(bytes))
@@ -107,25 +113,7 @@ namespace VMEngine.Engine.SparseVoxel
             return floats;
         }
 
-        public static float[] test()
-        {
-            Bitmap bmp = GenerateTexture();
-
-            float[] floats = new float[bmp.Height];
-
-            for (int i = 0; i < floats.Length; i++)
-            {
-                floats[i] = VoxelColor.ColorToFloat(bmp.GetPixel(0, i));
-            }
-
-            floats = AllChunksFloats();
-
-            //floats[7] = new VoxelColor(255, 0, 0, 255).ToFloat();
-
-            return floats;
-        }
-
-        public static float[] AllChunksFloats()
+        public static float[] GetFloats()
         {
             int texelsCount = 0;
             float[][] texels = new float[SizeX * SizeY * SizeZ][];
@@ -166,92 +154,92 @@ namespace VMEngine.Engine.SparseVoxel
             floats.AddRange(oct.Position.ToArray());
             floats.Add(voxs.Length);
             //floats.AddRange(voxs);
-            VoxelSortStruct[] vss = new VoxelSortStruct[voxs.Length / 5];
-            for (int i = 0; i < vss.Length; i++)
-            {
-                vss[i] = new VoxelSortStruct(new float[]
-                {
-                    voxs[i * 5],
-                    voxs[i * 5 + 1],
-                    voxs[i * 5 + 2],
-                    voxs[i * 5 + 3],
-                    voxs[i * 5 + 4],
-                });
-            }
-            MergeSort(vss, 0, vss.Length - 1, oct.Position);
+   //         VoxelSortStruct[] vss = new VoxelSortStruct[voxs.Length / 5];
+   //         for (int i = 0; i < vss.Length; i++)
+   //         {
+   //             vss[i] = new VoxelSortStruct(new float[]
+   //             {
+   //                 voxs[i * 5],
+   //                 voxs[i * 5 + 1],
+   //                 voxs[i * 5 + 2],
+   //                 voxs[i * 5 + 3],
+   //                 voxs[i * 5 + 4],
+   //             });
+   //         }
+   //         MergeSort(vss, 0, vss.Length - 1, oct.Position);
 
-            int voxCount = vss.Length;
-            //vss[0].data[4] = new VoxelColor(255, 0, 0, 255).ToFloat();
+   //         int voxCount = vss.Length;
+   //         //vss[0].data[4] = new VoxelColor(255, 0, 0, 255).ToFloat();
 
-            for(int i = 0;i < voxCount; i++)
-            {
-                byte c = (byte)(255 / (i + 1));
-                vss[i].data[4] = new VoxelColor(c,c,c, 255).ToFloat();
-			}
+   //         for(int i = 0;i < voxCount; i++)
+   //         {
+   //             byte c = (byte)(255 / (i + 1));
+   //             vss[i].data[4] = new VoxelColor(c,c,c, 255).ToFloat();
+			//}
 
-            for (int i = 0; i < vss.Length; i++)
-            {
-                floats.AddRange(vss[i].data);
-            }
+   //         for (int i = 0; i < vss.Length; i++)
+   //         {
+   //             floats.AddRange(vss[i].data);
+   //         }
 
             return floats.ToArray();
         }
 
         //метод для слияния массивов
-        static void Merge(VoxelSortStruct[] array, int lowIndex, int middleIndex, int highIndex, Vector3 offset)
-        {
-            var left = lowIndex;
-            var right = middleIndex + 1;
-            var tempArray = new VoxelSortStruct[highIndex - lowIndex + 1];
-            var index = 0;
+        //static void Merge(VoxelSortStruct[] array, int lowIndex, int middleIndex, int highIndex, Vector3 offset)
+        //{
+        //    var left = lowIndex;
+        //    var right = middleIndex + 1;
+        //    var tempArray = new VoxelSortStruct[highIndex - lowIndex + 1];
+        //    var index = 0;
 
-            while (left <= middleIndex && right <= highIndex)
-            {
-                if (array[left].distance(offset) < array[right].distance(offset))
-                {
-                    tempArray[index] = array[left];
-                    left++;
-                }
-                else
-                {
-                    tempArray[index] = array[right];
-                    right++;
-                }
+        //    while (left <= middleIndex && right <= highIndex)
+        //    {
+        //        if (array[left].distance(offset) < array[right].distance(offset))
+        //        {
+        //            tempArray[index] = array[left];
+        //            left++;
+        //        }
+        //        else
+        //        {
+        //            tempArray[index] = array[right];
+        //            right++;
+        //        }
 
-                index++;
-            }
+        //        index++;
+        //    }
 
-            for (var i = left; i <= middleIndex; i++)
-            {
-                tempArray[index] = array[i];
-                index++;
-            }
+        //    for (var i = left; i <= middleIndex; i++)
+        //    {
+        //        tempArray[index] = array[i];
+        //        index++;
+        //    }
 
-            for (var i = right; i <= highIndex; i++)
-            {
-                tempArray[index] = array[i];
-                index++;
-            }
+        //    for (var i = right; i <= highIndex; i++)
+        //    {
+        //        tempArray[index] = array[i];
+        //        index++;
+        //    }
 
-            for (var i = 0; i < tempArray.Length; i++)
-            {
-                array[lowIndex + i] = tempArray[i];
-            }
-        }
+        //    for (var i = 0; i < tempArray.Length; i++)
+        //    {
+        //        array[lowIndex + i] = tempArray[i];
+        //    }
+        //}
 
         //сортировка слиянием
-        static VoxelSortStruct[] MergeSort(VoxelSortStruct[] array, int lowIndex, int highIndex, Vector3 offset)
-        {
-            if (lowIndex < highIndex)
-            {
-                var middleIndex = (lowIndex + highIndex) / 2;
-                MergeSort(array, lowIndex, middleIndex, offset);
-                MergeSort(array, middleIndex + 1, highIndex, offset);
-                Merge(array, lowIndex, middleIndex, highIndex, offset);
-            }
+        //static VoxelSortStruct[] MergeSort(VoxelSortStruct[] array, int lowIndex, int highIndex, Vector3 offset)
+        //{
+        //    if (lowIndex < highIndex)
+        //    {
+        //        var middleIndex = (lowIndex + highIndex) / 2;
+        //        MergeSort(array, lowIndex, middleIndex, offset);
+        //        MergeSort(array, middleIndex + 1, highIndex, offset);
+        //        Merge(array, lowIndex, middleIndex, highIndex, offset);
+        //    }
 
-            return array;
-        }
+        //    return array;
+        //}
 
         public static Hit CastRay(Vector3 origin, Vector3 direction, int mask, float distance = 0, bool filledOnly = true)
         {
@@ -266,7 +254,7 @@ namespace VMEngine.Engine.SparseVoxel
                         VoxelOctree vox = Chunks[x, y, z];
                         float hitDistance = 0;
                         if (vox.GetState(0) == false) continue;
-                        if (!_RayAABBIntersection(origin, direction, vox.Position - Vector3.one * vox.EdgeSize / 2, vox.Position + Vector3.one * vox.EdgeSize / 2, out hitDistance)) continue;
+                        if (!_RayAABBIntersection(origin, direction, vox.Position - Vector3.one * vox.GetEdgeSize() / 2, vox.Position + Vector3.one * vox.GetEdgeSize() / 2, out hitDistance)) continue;
 
                         VoxelOctree[] subVoxs = vox.GetAllSubvoxels();
 
@@ -274,7 +262,7 @@ namespace VMEngine.Engine.SparseVoxel
                         {
                             vox = subVoxs[i];
                             if (vox.GetState(0) == false) continue;
-                            if (!_RayAABBIntersection(origin, direction, vox.Position - Vector3.one * vox.EdgeSize / 2, vox.Position + Vector3.one * vox.EdgeSize / 2, out hitDistance)) continue;
+                            if (!_RayAABBIntersection(origin, direction, vox.Position - Vector3.one * vox.GetEdgeSize() / 2, vox.Position + Vector3.one * vox.GetEdgeSize() / 2, out hitDistance)) continue;
 
 
                             if (hit == null)
@@ -327,5 +315,20 @@ namespace VMEngine.Engine.SparseVoxel
             distance = tmin;
             return true;
         }
-    }
+
+		public static bool slabs(Vector3 p0, Vector3 p1, Vector3 rayOrigin, Vector3 invRaydir)
+		{
+			Vector3 t0 = (p0 - rayOrigin) * invRaydir;
+			Vector3 t1 = (p1 - rayOrigin) * invRaydir;
+            Vector3 tmin = Vector3.Min(t0, t1);
+            Vector3 tmax = Vector3.Max(t0, t1);
+			return Vector3.VMax(tmin) <= Vector3.VMin(tmax);
+		}
+
+
+		internal static void UnbindAll()
+		{
+			throw new NotImplementedException();
+		}
+	}
 }
